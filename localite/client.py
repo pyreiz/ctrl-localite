@@ -29,9 +29,6 @@ class Client(object):
 
     socket = None
 
-    def __del__(self):
-        self.close()
-
     def __init__(self, host, port=6666):        
         self.host = host
         self.port = port
@@ -46,7 +43,8 @@ class Client(object):
         'closes the connection'
         self.socket.shutdown(1)
         self.socket.close()
-
+        del self.socket
+        
     def write(self, data):
         self.socket.sendall(data.encode('ascii'))
         return self
@@ -80,9 +78,9 @@ class Client(object):
         self.connect()
         self.write(msg)        
         key = val = ''    
-        _, expected = self.decode(msg)        
+        _, expected = self.decode(msg)   
         while key != expected:
-            key, val = self.read()            
+            key, val = self.read() 
         self.close()
         return key, val
 
