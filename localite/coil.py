@@ -24,8 +24,8 @@ class Coil():
         self._client.send('{"current_instrument":"COIL_' + self.id +'"}')
     
     def trigger(self):
-        self._client.trigger(self.id)
-    
+        "return the pylsl timestamp of when the trigger was sent"
+        return self._client.trigger(self.id) 
     
     @property
     def id(self):

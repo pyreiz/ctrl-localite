@@ -9,12 +9,7 @@ import json
 import pylsl
 import threading
 import time
-# %%
-def decode(msg):
-  _brack_val = {'{': 1, '}': -1}
-  _quota_val = {'"': 1, "'": 1}
-  _colon_val = {'{': -1, ':': 2, '}': -1}
-    
+
 # %%
 class SmartClient(threading.Thread):    
     "LSL based software marker streamer"
@@ -76,14 +71,14 @@ class SmartClient(threading.Thread):
                self.client.send(marker)                                
         except ConnectionResetError or ConnectionRefusedError:
             print("Connection Problems. Aborting for safety")
-            return False
+            return None
                 
         tstamp = pylsl.local_clock()
         print(f'Pushed {marker} at {tstamp}')
         with self.outlet_lock:            
             self.outlet.push_sample([marker], tstamp)                   
         
-        return True
+        return tstamp
     
     def run(self):   
         self.is_running.set()
