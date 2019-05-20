@@ -39,3 +39,4 @@ class Response():
     def get_vpp(self, channel_idx:int=0):        
         data = self.chunk[self.onset:self.post, channel_idx]                
         return data.max()-data.min()
+    
