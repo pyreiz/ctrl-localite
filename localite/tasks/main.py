@@ -22,8 +22,9 @@ channel_of_interest = 'EDC_L'
 # %%        
 from localite.tasks.generics import search_hotspot, find_highest
 from localite.tasks.generics import measure_rmt
+from localite.tasks.generics import mapping, free_mode
 # %% Make a rough map for the hotspot  detection by applying several stimuli
-collection = search_hotspot(env.coil, trials=10, env=env)
+collection = search_hotspot(trials=10, env=env)
 env.majel.say(f'Durchgang beendet')
 
 try:    
@@ -36,7 +37,7 @@ except IndexError: #aborted run
 # %% Fine tune the best hotspot by iterating over the best three
 collection = []
 for candidate in range(0,3,1):    
-    candidate_collection = search_hotspot(env.coil, trials=3, task_description='Ziel wechseln', env=env)
+    candidate_collection = search_hotspot(trials=3, task_description='Ziel wechseln', env=env)
     collection.extend(candidate_collection)
 env.majel.say('Durchgang beendet')
 
@@ -49,8 +50,13 @@ except IndexError: #aborted run
     env.majel.say('Nicht genügend Durchläufe zur Auswertung')
 
 #%% Bestimme die Ruhemotorschwellen
-results = measure_rmt(env.coil, channel=channel_of_interest,  threshold_in_uv=50, 
+results = measure_rmt(channel=channel_of_interest,  threshold_in_uv=50, 
                       max_trials_per_amplitude=10, env=env)
+env.majel.say(f'Durchgang beendet')
+#%%
+free_mode(autotrigger=False, channel='EDC_L', isi=(2,3), env=env)
+env.majel.say(f'Durchgang beendet')
+
 
 
 

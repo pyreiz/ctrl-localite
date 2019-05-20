@@ -89,7 +89,7 @@ class Coil():
         
     @property
     def position_reached(self):
-        return True if self.request("position_control") == "TRUE" else False
+        return True if self.request("position_control")['position_reached'] == "TRUE" else False
     
     @property
     def status(self):

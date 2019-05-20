@@ -78,10 +78,10 @@ def find_highest(collection, channel='EDC_L'):
     pos = [(collection[s]['x'], collection[s]['y'], collection[s]['z']) for s in shuffler]
     return amps, pos, shuffler
 # %%
-def search_hotspot(coil,  trials=40, isi=(2,3),
+def search_hotspot(trials=40, isi=(2,3),
                    task_description='Starte Hotspotsuche',
                    env=None):
-    
+    coil = env.coil
     majel = env.majel
     labels = env.labels
     emg_labels = env.emg_labels
@@ -120,7 +120,7 @@ def search_hotspot(coil,  trials=40, isi=(2,3),
     
     majel.say(task_description)    
     
-    while coil.amplitude == 0:
+    if coil.amplitude == 0:
         majel.say('Stelle eine Amplitude ein und bestätige')    
         response = manual_trigger(coil, marker, buffer)
         
@@ -158,12 +158,13 @@ def search_hotspot(coil,  trials=40, isi=(2,3),
             
     return collection
 # %%
-def measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50,
+def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
                 max_trials_per_amplitude=10, isi=(2,3),
                 task_description = 'Starte Ruhemotorschwelle',
                 env=None):    
     from collections import defaultdict    
     labels = env.labels
+    coil = env.coil
     majel, marker, buffer = env.majel, env.marker, env.buffer
     
     plt.close('all')        
@@ -193,7 +194,7 @@ def measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50,
                           
     majel.say(task_description)         
     
-    while coil.amplitude == 0:
+    if coil.amplitude == 0:
         majel.say('Stelle eine Amplitude ein und bestätige')    
         response = manual_trigger(coil, marker, buffer)     
         
@@ -214,18 +215,18 @@ def measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50,
             majel.say('Durchgang beendet')            
             break
   
-        # save result                         
+        # show and save result                         
         vpp = response.get_vpp(labels[channel])                
         amplitude_response[amplitude].append(vpp)    
-               
+        show(response, labels)
+        
         # analyse results
         vals = amplitude_response[amplitude]        
         above = [v>=threshold_in_uv for v in vals]
         cut_off = (max_trials_per_amplitude//2)
         above_rmt = sum(above) > cut_off 
         below_rmt = sum([not a for a in above]) > cut_off
-        print(amplitude, vals)
-        show(response, labels)
+        
         plt.pause(0.5)    
         # when more than max_trials, or any has sufficient counts, the state is reset
         # to start_confirmed, and requires manual setting
@@ -242,3 +243,132 @@ def measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50,
             print('{0} -> {1:3.2f} ({2})'.format(key, sum(vals)/len(vals), vals))            
     return amplitude_response
 
+# %%
+def free_mode(autotrigger=True, channel='EDC_L', isi=(2,3),
+              task_description = 'Starte freien Modus',
+              env=None):    
+    labels = env.labels
+    coil = env.coil
+    majel, marker, buffer = env.majel, env.marker, env.buffer
+    
+    plt.close('all')        
+    def create_canvas():
+        fig, axes = plt.subplots(1,1)
+        fig.canvas.manager.window.move(-1280, 20)
+        fig.canvas.manager.window.resize(1280, 1024)
+        fig.tight_layout()
+        return fig, axes
+
+    fig, ax = create_canvas()    
+    def show(response, labels):
+        ax.cla()    
+        trace = response.get_trace(channel_idx=labels[channel])
+        vpp = response.get_vpp(channel_idx=labels[channel])
+        ax.plot(trace)
+        ax.plot([response.pre_in_ms, response.pre_in_ms],[-100, 100], color='red')
+        textstr = 'Vpp = {0:3.2f}'.format(vpp)
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+            verticalalignment='top', bbox=props)
+        ax.set_title(channel)
+        xticks, xticklabels, xlim = response.get_xaxis()
+        ax.set_xticks(xticks)
+        ax.set_xlim(xlim)
+        ax.set_xticklabels(xticklabels)
+                          
+    majel.say(task_description)         
+    
+    if coil.amplitude == 0:
+        majel.say('Stelle eine Amplitude ein und bestätige')    
+        response = manual_trigger(coil, marker, buffer)     
+            
+    amplitude = coil.amplitude
+    automatic = not autotrigger
+    while True:        
+        if not automatic:          
+            majel.say('Bereit')    
+            response = manual_trigger(coil, marker, buffer)     
+            automatic = autotrigger                  
+        else:
+            time.sleep(isi[0]+ (random.random()*(isi[1]-isi[0])))    
+            response = auto_trigger(coil, marker, buffer)     
+            
+        amplitude = coil.amplitude        
+        if amplitude == 0:
+            majel.say('Durchgang beendet')            
+            break
+  
+        # show result                                 
+        show(response, labels)
+        plt.pause(0.5)  
+# %%
+def mapping(channel='EDC_L', trials_per_position=3, isi=(2,3),
+            task_description = 'Starte Mapping',
+            env=None):    
+    labels = env.labels
+    coil = env.coil
+    majel, marker, buffer = env.majel, env.marker, env.buffer
+    
+    plt.close('all')        
+    def create_canvas():
+        fig, axes = plt.subplots(1,1)
+        fig.canvas.manager.window.move(-1280, 20)
+        fig.canvas.manager.window.resize(1280, 1024)
+        fig.tight_layout()
+        return fig, axes
+
+    fig, ax = create_canvas()    
+    def show(response, labels):
+        ax.cla()    
+        trace = response.get_trace(channel_idx=labels[channel])
+        vpp = response.get_vpp(channel_idx=labels[channel])
+        ax.plot(trace)
+        ax.plot([response.pre_in_ms, response.pre_in_ms],[-100, 100], color='red')
+        textstr = 'Vpp = {0:3.2f}'.format(vpp)
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+            verticalalignment='top', bbox=props)
+        ax.set_title(channel)
+        xticks, xticklabels, xlim = response.get_xaxis()
+        ax.set_xticks(xticks)
+        ax.set_xlim(xlim)
+        ax.set_xticklabels(xticklabels)
+                          
+    majel.say(task_description)         
+    
+    if coil.amplitude == 0:
+        majel.say('Stelle eine Amplitude ein und bestätige')    
+        response = manual_trigger(coil, marker, buffer)     
+                
+    keep_target = False
+    counter = 0   
+    target_idx = 0
+    coil.target_index = target_idx  
+    while True:        
+        if not keep_target:          
+            majel.say('Ziel wechseln')    
+            while not coil.position_reached:
+                pass
+            else:
+                response = auto_trigger(coil, marker, buffer)     
+                keep_target = True
+                counter  += 1
+        else:
+            while not coil.position_reached:
+                pass
+            else:
+               response = auto_trigger(coil, marker, buffer)     
+               counter  += 1
+        
+        if counter == trials_per_position:
+            keep_target = False
+            target_idx += 1
+            coil.target_index = target_idx         
+        if coil.amplitude  == 0 or coil.target_index != target_idx:
+            majel.say('Durchgang beendet')            
+            break
+  
+        # show result                                 
+        show(response, labels)
+        plt.pause(0.5)    
+     

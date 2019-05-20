@@ -175,7 +175,12 @@ class Client(object):
     
     def decode(self, msg:str, index=0):
         msg = msg.replace('reason','\"reason\"') #catches and interface error    
-        msg = json.loads(msg)
+        try:
+            msg = json.loads(msg)
+        except json.JSONDecodeError as e:
+            print(msg)
+            raise e
+                
         key = list(msg.keys())[index]
         val = msg[key]
         return key, val
