@@ -7,13 +7,21 @@ Created on Thu May 16 23:14:42 2019
 """
 
 from localite.client import SmartClient
+from json import dumps as _dumps
 # %%
 class Coil():
     
     def __init__(self, coil=0, **kwargs):
         self.id = coil
         self._client = SmartClient.get_running_instance(**kwargs)
-       
+      
+        
+    def push_dictionary(self, marker:dict):
+        self._client.push_marker(_dumps(marker))   
+        
+    def push_marker(self, marker:str):
+        self._client.push_marker(marker)
+        
     def request(self, msg:str):
         return self._client.request("coil_" + self.id + "_" + msg)
     

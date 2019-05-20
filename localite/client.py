@@ -80,6 +80,12 @@ class SmartClient(threading.Thread):
         
         return tstamp
     
+    def push_marker(self, marker:str):
+        tstamp = pylsl.local_clock()
+        print(f'Pushed {marker} at {tstamp}')
+        with self.outlet_lock:            
+            self.outlet.push_sample([marker], tstamp)                   
+        
     def run(self):   
         self.is_running.set()
         print(self.info.as_xml())        
