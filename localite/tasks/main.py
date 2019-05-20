@@ -120,29 +120,26 @@ def find_highest(collection, channel='EDC_L'):
             pos_max = (r['x'], r['y'], r['z'])
     return amp_max, pos_max    
 # %%
-def search_hotspot(coil, automatic=True, trials=40, amplitude=None, isi=(4,5), confirm_manually=True):
+def search_hotspot(coil, automatic=True, trials=40, isi=(4,5)):
     fig, axes = create_hotspot_canvas()
     task_description = 'Starte {0} Hotspot-suche'.format(['manuelle','automatische'][automatic])
     majel.say(task_description)    
-    coil.push_marker(task_description)
-    start_confirmed = False if confirm_manually else True
-    if amplitude is not None:
-        coil.amplitude = amplitude
+    start_confirmed = False    
+    while coil.amplitude == 0:
+        majel.say('Stelle eine Amplitude ein und bestätige')    
+        response = manual_trigger()
     counter = 0
     collection = []
     while counter < trials:            
-        if automatic and start_confirmed:
-            print('Setting an automatic trigger')    
+        if automatic and start_confirmed: 
             time.sleep(isi[0]+ (random.random()*(isi[1]-isi[0])))
             response = auto_trigger()     
-        elif automatic and not start_confirmed:
-            majel.say('Ich warte auf manuellen Start des ersten Triggers')    
+        else:
+            print('Waiting for manual trigger')    
+            majel.say('Bereit')    
             response = manual_trigger()     
             start_confirmed = True
-        else:            
-            print('Waiting for manual trigger')    
-            response = manual_trigger()     
-            
+                    
         response_marker = create_marker(response, coil, emg_labels)
         coil.push_dictionary(response_marker)
         show(response, axes, emg_labels)    
@@ -156,8 +153,7 @@ def search_hotspot(coil, automatic=True, trials=40, amplitude=None, isi=(4,5), c
 def measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50,
                 max_trials_per_amplitude=10, isi=(4,5)):
     task_description = 'Starte Ruhemotorschwellenbestimmung'
-    majel.say(task_description)    
-    coil.push_marker(task_description)    
+    majel.say(task_description)     
     amplitude_response = defaultdict(list)    
     fig, ax = create_rmt_canvas()
     
@@ -177,21 +173,20 @@ def measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50,
         majel.say('Stelle eine Amplitude ein und bestätige')    
         response = manual_trigger()
         
-    start_confirmed = False
+    automatic = False
     amplitude = coil.amplitude
     while True:        
-        if not start_confirmed:
+        if not automatic:
             majel.say('Bereit')    
             response = manual_trigger()     
-            start_confirmed = True                            
+            automatic = True                            
         else:
             time.sleep(isi[0]+ (random.random()*(isi[1]-isi[0])))    
             response = auto_trigger() 
             
         amplitude = coil.amplitude        
         if amplitude == 0:
-            majel.say('Durchgang beendet')
-            coil.push_marker
+            majel.say('Durchgang beendet')            
             break
   
         # save result                         
@@ -212,10 +207,10 @@ def measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50,
         if above_rmt or below_rmt: #also evaluates true if more than max_trials
             percent = sum(above)/len(above)
             majel.say('{0} schafft {1:2.0f} Prozent'.format(amplitude, percent*100))             
-            start_confirmed = False
+            automatic = False
         elif len(above) == max_trials_per_amplitude: #that means 50/50
             majel.say('{0} ist perfekt'.format(amplitude))
-            start_confirmed = False            
+            automatic = False            
         
         for key in sorted(amplitude_response.keys()):
             vals = amplitude_response[key]
@@ -229,4 +224,5 @@ majel.say(f'Durchgang beendet')
 index, pos = find_highest(collection, channel='EDC_L')
 majel.say('Höchste Antwort bei {0}. Stimulus in {1:0.0f}, {2:0.0f}, und {3:0.0f}'.format(index+1, *pos))
 # %%
-measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50, max_trials_per_amplitude=4, isi=(4,5))
+results = measure_rmt(coil, channel='EDC_L',  threshold_in_uv=50, max_trials_per_amplitude=4, isi=(4,5))
+
