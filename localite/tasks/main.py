@@ -22,10 +22,9 @@ channel_of_interest = 'EDC_L'
 # %%        
 from localite.tasks.generics import search_hotspot, find_highest
 from localite.tasks.generics import measure_rmt
-from localite.tasks.generics import mapping, free_mode
+from localite.tasks.generics import free_mode
 # %% Make a rough map for the hotspot  detection by applying several stimuli
 collection = search_hotspot(trials=10, env=env)
-env.majel.say(f'Durchgang beendet')
 
 try:    
     amp, pos, sorter  = find_highest(collection, channel=channel_of_interest)    
@@ -39,7 +38,6 @@ collection = []
 for candidate in range(0,3,1):    
     candidate_collection = search_hotspot(trials=3, task_description='Ziel wechseln', env=env)
     collection.extend(candidate_collection)
-env.majel.say('Durchgang beendet')
 
 try:
     amp, pos, sorter  = find_highest(collection, channel=channel_of_interest)
@@ -52,10 +50,8 @@ except IndexError: #aborted run
 #%% Bestimme die Ruhemotorschwellen
 results = measure_rmt(channel=channel_of_interest,  threshold_in_uv=50, 
                       max_trials_per_amplitude=10, env=env)
-env.majel.say(f'Durchgang beendet')
 #%%
-free_mode(autotrigger=False, channel='EDC_L', isi=(2,3), env=env)
-env.majel.say(f'Durchgang beendet')
+free_mode(autotrigger=False, channel='EDC_L', env=env)
 
 
 

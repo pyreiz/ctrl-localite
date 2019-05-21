@@ -10,7 +10,7 @@ from localite import Response
 import time
 import random
 import reiz
-    
+from collections import defaultdict    
 # %%
 def plot_trigger(coil, marker, buffer, auto=False):    
     coil.trigger()
@@ -155,14 +155,15 @@ def search_hotspot(trials=40, isi=(2,3),
             counter  += 1
             print(counter)        
             collection.append(response_marker)         
-            
+           
+    majel.say(f'Durchgang beendet')
     return collection
 # %%
 def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
                 max_trials_per_amplitude=10, isi=(2,3),
                 task_description = 'Starte Ruhemotorschwelle',
                 env=None):    
-    from collections import defaultdict    
+   
     labels = env.labels
     coil = env.coil
     majel, marker, buffer = env.majel, env.marker, env.buffer
@@ -211,8 +212,7 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
             response = auto_trigger(coil, marker, buffer)     
             
         amplitude = coil.amplitude        
-        if amplitude == 0:
-            majel.say('Durchgang beendet')            
+        if amplitude == 0:      
             break
   
         # show and save result                         
@@ -240,7 +240,9 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
         
         for key in sorted(amplitude_response.keys()):
             vals = amplitude_response[key]
-            print('{0} -> {1:3.2f} ({2})'.format(key, sum(vals)/len(vals), vals))            
+            print('{0} -> {1:3.2f} ({2})'.format(key, sum(vals)/len(vals), vals))    
+            
+    majel.say(f'Durchgang beendet')            
     return amplitude_response
 
 # %%
@@ -282,93 +284,34 @@ def free_mode(autotrigger=True, channel='EDC_L', isi=(2,3),
         majel.say('Stelle eine Amplitude ein und bestätige')    
         response = manual_trigger(coil, marker, buffer)     
             
-    amplitude = coil.amplitude
-    automatic = not autotrigger
+    automatic = False
+    tix_counts = defaultdict(list)    
+    if not autotrigger:
+        majel.say('Bereit')    
     while True:        
         if not automatic:          
-            majel.say('Bereit')    
+            if autotrigger:
+                majel.say('Bereit')    
             response = manual_trigger(coil, marker, buffer)     
-            automatic = autotrigger                  
+            if autotrigger:
+                automatic = True                  
         else:
             time.sleep(isi[0]+ (random.random()*(isi[1]-isi[0])))    
             response = auto_trigger(coil, marker, buffer)     
-            
-        amplitude = coil.amplitude        
-        if amplitude == 0:
-            majel.say('Durchgang beendet')            
-            break
-  
-        # show result                                 
-        show(response, labels)
-        plt.pause(0.5)  
-# %%
-def mapping(channel='EDC_L', trials_per_position=3, isi=(2,3),
-            task_description = 'Starte Mapping',
-            env=None):    
-    labels = env.labels
-    coil = env.coil
-    majel, marker, buffer = env.majel, env.marker, env.buffer
-    
-    plt.close('all')        
-    def create_canvas():
-        fig, axes = plt.subplots(1,1)
-        fig.canvas.manager.window.move(-1280, 20)
-        fig.canvas.manager.window.resize(1280, 1024)
-        fig.tight_layout()
-        return fig, axes
 
-    fig, ax = create_canvas()    
-    def show(response, labels):
-        ax.cla()    
-        trace = response.get_trace(channel_idx=labels[channel])
-        vpp = response.get_vpp(channel_idx=labels[channel])
-        ax.plot(trace)
-        ax.plot([response.pre_in_ms, response.pre_in_ms],[-100, 100], color='red')
-        textstr = 'Vpp = {0:3.2f}'.format(vpp)
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-            verticalalignment='top', bbox=props)
-        ax.set_title(channel)
-        xticks, xticklabels, xlim = response.get_xaxis()
-        ax.set_xticks(xticks)
-        ax.set_xlim(xlim)
-        ax.set_xticklabels(xticklabels)
-                          
-    majel.say(task_description)         
-    
-    if coil.amplitude == 0:
-        majel.say('Stelle eine Amplitude ein und bestätige')    
-        response = manual_trigger(coil, marker, buffer)     
-                
-    keep_target = False
-    counter = 0   
-    target_idx = 0
-    coil.target_index = target_idx  
-    while True:        
-        if not keep_target:          
-            majel.say('Ziel wechseln')    
-            while not coil.position_reached:
-                pass
-            else:
-                response = auto_trigger(coil, marker, buffer)     
-                keep_target = True
-                counter  += 1
-        else:
-            while not coil.position_reached:
-                pass
-            else:
-               response = auto_trigger(coil, marker, buffer)     
-               counter  += 1
-        
-        if counter == trials_per_position:
-            keep_target = False
-            target_idx += 1
-            coil.target_index = target_idx         
-        if coil.amplitude  == 0 or coil.target_index != target_idx:
-            majel.say('Durchgang beendet')            
-            break
-  
         # show result                                 
         show(response, labels)
-        plt.pause(0.5)    
-     
+        tix = coil.target_index
+        count = tix_counts.get(tix, 0)
+        count += 1
+        tix_counts[tix] = count
+        props = dict(boxstyle='round', facecolor='white', alpha=1)
+        ax.text(-.025, 1, f'#{count} at {tix}', transform=ax.transAxes, fontsize=14,
+                verticalalignment='top', bbox=props)   
+        plt.pause(0.01)
+        
+        amplitude = coil.amplitude        
+        if amplitude == 0:       
+            break
+        
+    majel.say(f'Durchgang beendet')
