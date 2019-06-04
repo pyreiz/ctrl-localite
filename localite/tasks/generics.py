@@ -60,16 +60,18 @@ def wait_for_trigger(coil, marker, buffer):
     
 def create_marker(response, coil, emg_labels, labels):
     amplitude, position = coil.amplitude, coil.position
+    Vpp= {}
+    for lbl in emg_labels:
+        vpp = response.get_vpp(channel_idx=labels[lbl])
+        Vpp[lbl] = vpp        
+
     if position is None:
         reiz.audio.library.dong.play()         
-        return None
+        response_marker = {'amplitude':amplitude, 'x':None, 'y': None, 'z':None, **Vpp}
     else:
-        Vpp= {}
-        for lbl in emg_labels:
-            vpp = response.get_vpp(channel_idx=labels[lbl])
-            Vpp[lbl] = vpp        
         response_marker = {'amplitude':amplitude, **position, **Vpp}
-        return response_marker
+        
+    return response_marker
 
 def find_highest(collection, channel='EDC_L'):
     vals = [r[channel] for r in collection]
@@ -78,7 +80,7 @@ def find_highest(collection, channel='EDC_L'):
     pos = [(collection[s]['x'], collection[s]['y'], collection[s]['z']) for s in shuffler]
     return amps, pos, shuffler
 # %%
-def search_hotspot(trials=40, isi=(2,3),
+def search_hotspot(trials=40, isi=(3.5,4.5),
                    task_description='Starte Hotspotsuche',
                    env=None):
     coil = env.coil
@@ -106,6 +108,8 @@ def search_hotspot(trials=40, isi=(2,3),
             trace = response.get_trace(channel_idx=labels[lbl])
             vpp = response.get_vpp(channel_idx=labels[lbl])
             ax.plot(trace)
+            for pos, val in zip(response.peakpos_in_ms, response.peakval):
+                ax.plot([pos, pos],[0, val], color='red', linestyle=':')
             ax.plot([response.pre_in_ms, response.pre_in_ms],[-100, 100], color='red')
             textstr = 'Vpp = {0:3.2f}'.format(vpp)
             props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -137,30 +141,27 @@ def search_hotspot(trials=40, isi=(2,3),
             majel.say('Bereit')    
             response = manual_trigger(coil, marker, buffer)     
             automatic = True
+            
         if coil.amplitude == 0:
             break
         
         response_marker = create_marker(response, coil, emg_labels, labels)
-        if not response_marker:
-            print('Position sensors blocked, skipping')
-        else:
-            coil.push_dictionary(response_marker)
-            show(response, axes, emg_labels, labels)                          
-            props = dict(boxstyle='round', facecolor='white', alpha=1)
-            ax = axes[0,0]
-            ax.text(-.15, 1.05, f'{counter} of {trials}', transform=ax.transAxes, fontsize=14,
-                    verticalalignment='top', bbox=props)   
+        coil.push_dictionary(response_marker)
+        show(response, axes, emg_labels, labels)                          
+        props = dict(boxstyle='round', facecolor='white', alpha=1)
+        counter  += 1
+        ax = axes[0,0]
+        ax.text(-.15, 1.05, f'{counter} of {trials}', transform=ax.transAxes, fontsize=14,
+                verticalalignment='top', bbox=props)   
 
-            plt.pause(0.5)        
-            counter  += 1
-            print(counter)        
-            collection.append(response_marker)         
+        plt.pause(0.5)                    
+        collection.append(response_marker)         
            
     majel.say(f'Durchgang beendet')
     return collection
 # %%
 def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
-                max_trials_per_amplitude=10, isi=(2,3),
+                max_trials_per_amplitude=10, isi=(3.5,4.5),
                 task_description = 'Starte Ruhemotorschwelle',
                 env=None):    
    
@@ -183,6 +184,8 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
         vpp = response.get_vpp(channel_idx=labels[channel])
         ax.plot(trace)
         ax.plot([response.pre_in_ms, response.pre_in_ms],[-100, 100], color='red')
+        for pos, val in zip(response.peakpos_in_ms, response.peakval):
+            ax.plot([pos, pos],[0, val], color='red', linestyle=':')
         textstr = 'Vpp = {0:3.2f}'.format(vpp)
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
@@ -199,7 +202,7 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
         majel.say('Stelle eine Amplitude ein und bestätige')    
         response = manual_trigger(coil, marker, buffer)     
         
-    amplitude_response = defaultdict(list)    
+    amplitude_response = defaultdict(list)        
     amplitude = coil.amplitude
     automatic = False
     while True:        
@@ -219,7 +222,10 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
         vpp = response.get_vpp(labels[channel])                
         amplitude_response[amplitude].append(vpp)    
         show(response, labels)
-        
+        count = len(amplitude_response[amplitude])
+        props = dict(boxstyle='round', facecolor='white', alpha=1)        
+        ax.text(-.025, 1, f'#{count} at {amplitude}%', transform=ax.transAxes, fontsize=14,
+                verticalalignment='top', bbox=props)     
         # analyse results
         vals = amplitude_response[amplitude]        
         above = [v>=threshold_in_uv for v in vals]
@@ -246,7 +252,7 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
     return amplitude_response
 
 # %%
-def free_mode(autotrigger=True, channel='EDC_L', isi=(2,3),
+def free_mode(autotrigger=5, channel='EDC_L', isi=(3.5,4.5),
               task_description = 'Starte freien Modus',
               env=None):    
     labels = env.labels
@@ -268,6 +274,9 @@ def free_mode(autotrigger=True, channel='EDC_L', isi=(2,3),
         vpp = response.get_vpp(channel_idx=labels[channel])
         ax.plot(trace)
         ax.plot([response.pre_in_ms, response.pre_in_ms],[-100, 100], color='red')
+        for pos, val in zip(response.peakpos_in_ms, response.peakval):
+            ax.plot([pos, pos],[0, val], color='red', linestyle=':')
+            
         textstr = 'Vpp = {0:3.2f}'.format(vpp)
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
         ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
@@ -287,7 +296,7 @@ def free_mode(autotrigger=True, channel='EDC_L', isi=(2,3),
     automatic = False
     tix_counts = defaultdict(list)    
     if not autotrigger:
-        majel.say('Bereit')    
+        majel.say('Bereit')
     while True:        
         if not automatic:          
             if autotrigger:
@@ -299,12 +308,16 @@ def free_mode(autotrigger=True, channel='EDC_L', isi=(2,3),
             time.sleep(isi[0]+ (random.random()*(isi[1]-isi[0])))    
             response = auto_trigger(coil, marker, buffer)     
 
-        # show result                                 
+        # show result                                             
         show(response, labels)
+        # count up
         tix = coil.target_index
         count = tix_counts.get(tix, 0)
         count += 1
         tix_counts[tix] = count
+        if count >= autotrigger:
+            automatic = False
+        # and show
         props = dict(boxstyle='round', facecolor='white', alpha=1)
         ax.text(-.025, 1, f'#{count} at {tix}', transform=ax.transAxes, fontsize=14,
                 verticalalignment='top', bbox=props)   

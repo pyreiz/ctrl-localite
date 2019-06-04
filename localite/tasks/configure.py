@@ -13,16 +13,16 @@ from localite.tools import eeg_channels
 import localite
 @dataclass
 class Environment():
-    coil = localite.Coil(host="134.2.117.173")
-    majel = Majel(log=coil.push_marker)
-    marker = liesl.open_streams(type='Markers',
-                                name="BrainVision RDA Markers",
-                                hostname='Patrick')[0]
-    bvr = liesl.open_streams(type='EEG',
-                             name="BrainVision RDA",
-                             hostname='Patrick')[0]
+    coil = None #:localite.Coil(host="134.2.117.173")
+    majel = None #:Majel(log=coil.push_marker)
+    marker = None #:liesl.open_streams(type='Markers',
+               #                 name="BrainVision RDA Markers",
+               #                 hostname='Patrick')[0]
+    bvr = None #:liesl.open_streams(type='EEG',
+              #               name="BrainVision RDA",
+              #               hostname='Patrick')[0]
     
-    buffer = liesl.RingBuffer(bvr, duration_in_ms=2000)
+    buffer = None #:liesl.RingBuffer(bvr, duration_in_ms=2000)
     
     def setup(self):
         self.buffer.start()

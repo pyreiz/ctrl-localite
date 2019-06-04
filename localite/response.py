@@ -15,10 +15,10 @@ class Response():
     pre_in_ms:float = 25
     post_in_ms:float = 75
     onset_in_ms:float=None
+    mep_window_in_ms = [15, 50]
         
     @property
-    def onset(self):
-        #onset = (self.tstamps>self.onset_in_ms)[:,0].argmax()
+    def onset(self):       
         onset = abs((self.onset_in_ms-self.tstamps)[:,0]).argmin()
         return onset 
 
@@ -31,15 +31,25 @@ class Response():
     def post(self):
         post = int(self.post_in_ms*1000/self.fs)
         return self.onset+post
-
+    
+    @property
+    def mep_window(self):
+        mep_window = [self.onset+int(m*1000/self.fs) for m in self.mep_window_in_ms]
+        return mep_window
+    
     def get_trace(self, channel_idx:int=0):
         bl = self.chunk[self.pre:self.onset, channel_idx]        
         response = self.chunk[self.pre:self.post, channel_idx].copy()     
         response -= bl.mean()
         return response
     
-    def get_vpp(self, channel_idx:int=0):        
-        data = self.chunk[self.onset:self.post, channel_idx]                
+    def get_vpp(self, channel_idx:int=0):      
+        bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
+        data = self.chunk[self.mep_window[0]:self.mep_window[1], channel_idx]-bl        
+        peakpos = [data.argmin(), data.argmax()]
+        self.peakpos = [p + self.mep_window[0] for p in peakpos]
+        self.peakpos_in_ms = [p*1000/self.fs + self.mep_window_in_ms[0] + self.pre_in_ms for p in peakpos]        
+        self.peakval = [data.min(), data.max()]
         return data.max()-data.min()
     
     def remove_jitter(self, break_threshold_seconds=1,
