@@ -19,8 +19,9 @@ env.bvr = liesl.open_streams(type='EEG',
                              hostname='SEPHYS-CTRL')[0]
                              #hostname='Patrick')[0]
 env.buffer = liesl.RingBuffer(env.bvr, duration_in_ms=2000)
+env.channel_of_interest  = 'EDC_L'
 env.setup()
-channel_of_interest = 'EDC_R'
+
 # %%        
 from localite.tasks.generics import search_hotspot, find_highest
 from localite.tasks.generics import measure_rmt
@@ -29,10 +30,10 @@ from localite.tasks.generics import free_mode
 collection = search_hotspot(trials=40, env=env)
 
 try:    
-    amp, pos, sorter  = find_highest(collection, channel=channel_of_interest)    
+    amp, pos, sorter  = find_highest(collection, channel=env.channel_of_interest)    
     #env.majel.say('Höchste Antwort bei {0}. Stimulus mit {1} microVolt'.format(sorter[0]+1, amp[0]))    
     for ix in reversed(sorter):    
-        print('Beim {0}. Stimulus Antwort {1}'.format(ix+1, collection[ix][channel_of_interest]))
+        print('Beim {0}. Stimulus Antwort {1}'.format(ix+1, collection[ix][env.channel_of_interest]))
 except IndexError as e: #aborted run
     env.majel.say('Nicht genügend Durchläufe zur Auswertung' + str(e))
 # %% Fine tune the best hotspot by iterating over the best three
@@ -42,15 +43,15 @@ for candidate in range(0,3,1):
     collection.extend(candidate_collection)
 
 try:
-    amp, pos, sorter  = find_highest(collection, channel=channel_of_interest)
-    env.majel.say('Höchste Antwort bei {0}. Stimulus mit {1} microVolt'.format(sorter[0]+1, amp[0]))
+    amp, pos, sorter  = find_highest(collection, channel=env.channel_of_interest)
+    #env.majel.say('Höchste Antwort bei {0}. Stimulus mit {1} microVolt'.format(sorter[0]+1, amp[0]))
     for ix,_ in enumerate(collection):
-        print('Beim {0}. Stimulus Antwort {1}'.format(ix+1, collection[ix][channel_of_interest]))   
+        print('Beim {0}. Stimulus Antwort {1}'.format(ix+1, collection[ix][env.channel_of_interest]))   
 except IndexError: #aborted run
     env.majel.say('Nicht genügend Durchläufe zur Auswertung')
 
 #%% Bestimme die Ruhemotorschwellen
-results = measure_rmt(channel=channel_of_interest,  threshold_in_uv=50, 
+results = measure_rmt(channel=env.channel_of_interest,  threshold_in_uv=50, 
                       max_trials_per_amplitude=10, env=env)
 #%% Mapping - should be done manually
 free_mode(autotrigger=5, channel='EDC_L', env=env)

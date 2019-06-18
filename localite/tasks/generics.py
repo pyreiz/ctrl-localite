@@ -139,13 +139,15 @@ def search_hotspot(trials=40, isi=(3.5,4.5),
         else:           
             print('Waiting for manual trigger')    
             majel.say('Bereit')    
-            response = manual_trigger(coil, marker, buffer)     
+            response = manual_trigger(coil, marker, buffer)    
             automatic = True
             
         if coil.amplitude == 0:
             break
         
         response_marker = create_marker(response, coil, emg_labels, labels)
+        coil.set_response(response, 
+                          channel_idx=env.labels[env.channel_of_interest])
         coil.push_dictionary(response_marker)
         show(response, axes, emg_labels, labels)                          
         props = dict(boxstyle='round', facecolor='white', alpha=1)
@@ -218,7 +220,8 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
         if amplitude == 0:      
             break
   
-        # show and save result                         
+        # show and save result  
+        coil.set_response(response, channel_idx=env.labels[channel])
         vpp = response.get_vpp(labels[channel])                
         amplitude_response[amplitude].append(vpp)    
         show(response, labels)
@@ -309,7 +312,8 @@ def free_mode(autotrigger=5, channel='EDC_L', isi=(3.5,4.5),
             response = auto_trigger(coil, marker, buffer)     
 
         # show result                                             
-        show(response, labels)
+        coil.set_response(response, channel_idx=env.labels[channel])
+        show(response, labels)        
         # count up
         tix = coil.target_index
         count = tix_counts.get(tix, 0)
@@ -317,7 +321,7 @@ def free_mode(autotrigger=5, channel='EDC_L', isi=(3.5,4.5),
         tix_counts[tix] = count
         if count >= autotrigger:
             automatic = False
-        # and show
+        # and show        
         props = dict(boxstyle='round', facecolor='white', alpha=1)
         ax.text(-.025, 1, f'#{count} at {tix}', transform=ax.transAxes, fontsize=14,
                 verticalalignment='top', bbox=props)   

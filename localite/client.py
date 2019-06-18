@@ -9,7 +9,8 @@ import json
 import pylsl
 import threading
 import time
-
+import logging
+logger = logging.getLogger('__name__')
 # %%
 class SmartClient(threading.Thread):    
     "LSL based software marker streamer"
@@ -93,11 +94,14 @@ class SmartClient(threading.Thread):
             try:
                 with self.client_lock:    
                     key, val = self.client.listen()       
+                    logger.debug(key, val)
             except ConnectionResetError or ConnectionRefusedError:
                 print("Connection Problems. Retrying")
             
+            
             tstamp = pylsl.local_clock()            
-            marker = json.dumps({key:val})                   
+            marker = json.dumps({key:val})   
+            
             if key in ('coil_0_didt', 'coil_1_didt'): #localite has triggered                
                 print(f'Pushed {marker} at {tstamp}')
                 with self.outlet_lock:
@@ -178,7 +182,7 @@ class Client(object):
         try:
             msg = json.loads(msg)
         except json.JSONDecodeError as e:
-            print(msg)
+            logger.error(msg)
             raise e
                 
         key = list(msg.keys())[index]
@@ -196,8 +200,8 @@ class Client(object):
         self.write(msg)        
         key = val = ''    
         _, expected = self.decode(msg)   
-        print(msg)
-        print(expected)
+        logger.debug(msg)
+        logger.debug(expected)
         while key != expected:
             key, val = self.read()         
         self.close()        

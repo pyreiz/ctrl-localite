@@ -16,7 +16,8 @@ class Response():
     post_in_ms:float = 75
     onset_in_ms:float=None
     mep_window_in_ms = [15, 50]
-        
+    
+    
     @property
     def onset(self):       
         onset = abs((self.onset_in_ms-self.tstamps)[:,0]).argmin()
@@ -42,6 +43,16 @@ class Response():
         response = self.chunk[self.pre:self.post, channel_idx].copy()     
         response -= bl.mean()
         return response
+      
+    def get_latency(self, channel_idx:int=0):
+        bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
+        data = self.chunk[self.mep_window[0]:self.mep_window[1], channel_idx]-bl        
+        peakpos = [data.argmin(), data.argmax()]
+        peakpos = [p + self.mep_window[0] for p in peakpos]
+        peakpos_in_ms = [p*1000/self.fs -
+                         self.onset_in_ms
+                         for p in peakpos]   
+        return peakpos_in_ms
     
     def get_vpp(self, channel_idx:int=0):      
         bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
@@ -98,3 +109,24 @@ class Response():
         xlim = (0, self.post-self.pre)
         xticklabels = (['{0:.0f}'.format(x) for x in np.arange(-self.pre_in_ms*1000/self.fs, (self.post_in_ms+stepsize)*1000/self.fs, stepsize)])
         return xticks, xticklabels, xlim
+    
+    def as_json(self, channel_idx:int=0):
+        bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
+        data = self.chunk[self.mep_window[0]:self.mep_window[1], channel_idx]-bl    
+        mi,ma = [data.min(), data.max()]        
+        max_latency = self.get_latency(channel_idx)[0]
+        
+        msg = ('{"mepmaxtime": ' + f"{max_latency:.2f}, " + 
+               '"mepamplitude": ' + f"{ma-mi:.2f}, " + 
+               '"mepmin": ' + f"{mi:.2f}, " + 
+               '"mepmax": ' + f"{ma:.2f}" + '}')
+        return msg
+        
+class MockResponse():
+
+    def __new__(cls):
+        return Response(chunk=np.random.random((1000,8)),
+                   tstamps=np.atleast_2d(np.linspace(0,1000,1000)).T,
+                   fs=1000,
+                   onset_in_ms=501)
+                   

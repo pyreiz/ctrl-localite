@@ -99,6 +99,9 @@ class Coil():
     def response(self):
         return self.request("response")
     
+    def set_response(self, response, channel_idx:int=0):
+        msg = response.as_json(channel_idx)
+        self._client.send('{"coil_' + self.id + '_response": ' + msg + '}')        
 # %%
 # c.amplitude = 1        
 # %timeit -n 1 -r 1000 c.trigger()
