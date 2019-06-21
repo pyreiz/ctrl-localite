@@ -180,13 +180,13 @@ class Client(object):
     def decode(self, msg:str, index=0):
         msg = msg.replace('reason','\"reason\"') #catches and interface error    
         try:
-            msg = json.loads(msg)
+            decoded = json.loads(msg)
         except json.JSONDecodeError as e:
             logger.error(msg)
             raise e
                 
-        key = list(msg.keys())[index]
-        val = msg[key]
+        key = list(decoded.keys())[index]
+        val = decoded[key]
         return key, val
     
     def send(self, msg:str):
