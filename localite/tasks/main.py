@@ -27,7 +27,7 @@ from localite.tasks.generics import search_hotspot, find_highest
 from localite.tasks.generics import measure_rmt
 from localite.tasks.generics import free_mode
 # %% Make a rough map for the hotspot  detection by applying several stimuli
-collection = search_hotspot(trials=40, env=env)
+collection = search_hotspot(trials=10, env=env)
 
 try:    
     amp, pos, sorter  = find_highest(collection, channel=env.channel_of_interest)    
@@ -41,7 +41,7 @@ collection = []
 for candidate in range(0,3,1):    
     candidate_collection = search_hotspot(trials=3, task_description='Ziel wechseln', env=env)
     collection.extend(candidate_collection)
-
+env.majel.say('Fertig')
 try:
     amp, pos, sorter  = find_highest(collection, channel=env.channel_of_interest)
     #env.majel.say('Höchste Antwort bei {0}. Stimulus mit {1} microVolt'.format(sorter[0]+1, amp[0]))

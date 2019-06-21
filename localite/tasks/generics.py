@@ -19,6 +19,8 @@ from socket import timeout as TimeOutException
 DataRingBuffer = NewType("DataRingBuffer", RingBuffer)
 MarkerStreamInlet = NewType("MarkerStreamInlet", StreamInlet)
 Seconds = Union[int,float]
+import logging
+logger = logging.getLogger(name=__file__)
 # %%
 def plot_trigger(coil:Coil,
                  marker:MarkerStreamInlet, 
@@ -58,10 +60,10 @@ def auto_trigger(coil:Coil,
     marker.pull_chunk() #flush the buffer to be sure we catch the latest sample  
     coil.trigger() #trigger the coil
     try:
-        response = wait_for_trigger(coil, marker, buffer) #wait for the response
-    except TimeoutError:
+        response = wait_for_trigger(coil, marker, buffer, timeout) #wait for the response
+    except TimeOutException:
+        logger.warning("Timeout,. repeating command to stimulate")
         response = auto_trigger(coil, marker, buffer, timeout)
-
     return response
 
 def manual_trigger(coil:Coil,
@@ -130,7 +132,9 @@ def find_highest(collection, channel='EDC_L'):
 # %%
 def search_hotspot(trials=40, isi=(3.5,4.5),
                    task_description='Starte Hotspotsuche',
-                   env=None):
+                   env=None,
+                   run_automatic:bool=False):
+    print(__file__)
     coil = env.coil
     majel = env.majel
     labels = env.labels
@@ -187,9 +191,10 @@ def search_hotspot(trials=40, isi=(3.5,4.5),
         else:           
             print('Waiting for manual trigger')    
             majel.say('Bereit')    
-            response = manual_trigger(coil, marker, buffer)    
-            automatic = True
-            
+            response = manual_trigger(coil, marker, buffer)                
+            if run_automatic:
+                automatic = True
+                
         if coil.amplitude == 0:
             break
         
