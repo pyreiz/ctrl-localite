@@ -11,11 +11,23 @@ import time
 import random
 import reiz
 from collections import defaultdict    
+from localite.coil import Coil
+from typing import NewType, Union
+from liesl import RingBuffer
+from pylsl import StreamInlet, FOREVER
+from socket import timeout as TimeOutException
+DataRingBuffer = NewType("DataRingBuffer", RingBuffer)
+MarkerStreamInlet = NewType("MarkerStreamInlet", StreamInlet)
+Seconds = Union[int,float]
 # %%
-def plot_trigger(coil, marker, buffer, auto=False):    
-    coil.trigger()
-    triggered, onset_in_ms = marker.pull_sample()    
-    marker.pull_chunk() #flush the buffer
+def plot_trigger(coil:Coil,
+                 marker:MarkerStreamInlet, 
+                 buffer:DataRingBuffer,
+                 auto:bool=False):
+    coil.trigger() # trigger the coil
+    _, onset_in_ms = marker.pull_sample()    # pull only the timestamp
+    # pull_sample is blocking, so this waits until a trigger was received
+    marker.pull_chunk() #flush the buffer of the marker stream
     chunk, tstamps = buffer.get_timed()           
     print('[', end='')
     while tstamps[-1] < onset_in_ms + .25:
@@ -33,18 +45,53 @@ def plot_trigger(coil, marker, buffer, auto=False):
     #plt.plot(response.get_trace(64))
     return response
 
-def auto_trigger(coil, marker, buffer):    
-    marker.pull_chunk() #flush the buffer  
-    coil.trigger()
-    return wait_for_trigger(coil, marker, buffer)
+def auto_trigger(coil:Coil,
+                 marker:MarkerStreamInlet,
+                 buffer:DataRingBuffer,
+                 timeout:Seconds=1):    
+    """Expect the TMS to be triggered manually    
+    
+    We wait a certain time for the  response to arrive. If this time has passed,
+    we trigger again, assuming that somehow the TCP-IP command was lost in
+    transition.
+    """
+    marker.pull_chunk() #flush the buffer to be sure we catch the latest sample  
+    coil.trigger() #trigger the coil
+    try:
+        response = wait_for_trigger(coil, marker, buffer) #wait for the response
+    except TimeoutError:
+        response = auto_trigger(coil, marker, buffer, timeout)
 
-def manual_trigger(coil, marker, buffer):
-    marker.pull_chunk() #flush the buffer  
-    return wait_for_trigger(coil, marker, buffer)
+    return response
 
-def wait_for_trigger(coil, marker, buffer):    
-    triggered, onset_in_ms = marker.pull_sample()                 
+def manual_trigger(coil:Coil,
+                 marker:MarkerStreamInlet, 
+                 buffer:DataRingBuffer):
+    """Expect the TMS to be triggered manually
+    
+    We therefore also wait forever for the  response to arrive. If examiner
+    becomes inpatient as the trigger was swallowed, a manual repetition is 
+    necessary
+    """
+    
+    marker.pull_chunk() #flush the buffer to be sure we catch the latest sample
+    # wait  forever for the response, because
+    response = wait_for_trigger(coil, marker, buffer, timeout=FOREVER) 
+    
+    return response
+
+def wait_for_trigger(coil:Coil,
+                    marker:MarkerStreamInlet, 
+                    buffer:DataRingBuffer,
+                    timeout:Seconds=1):    
+    # pull the timestamp of the TMS pulse
+    # pull_sample is blocking, so this waits until a trigger was received
+    _, onset_in_ms = marker.pull_sample(timeout)
+    if onset_in_ms is None:
+        raise TimeOutException(f"Waited {timeout} for TMS pulse to arrive")
     chunk, tstamps = buffer.get_timed()  
+    
+    # wait a little bit longer to catch enough data around the TMS pulse
     print('[', end='')
     while tstamps[-1] < onset_in_ms +.25:
         print('.', end='')
@@ -52,6 +99,7 @@ def wait_for_trigger(coil, marker, buffer):
         time.sleep(0.05)
     print(']')
     
+    # create and return the response
     response = Response(chunk=chunk,
                         tstamps=tstamps,
                         fs=buffer.fs, 
