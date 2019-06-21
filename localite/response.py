@@ -1,20 +1,33 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon May 20 10:41:04 2019
+"""TMS Response class
 
-@author: AGNPT-M-001
+@author:  Robert Guggenberger
 """
 from dataclasses import dataclass
 import numpy as np
 # %%
 @dataclass
 class Response():    
+    """A MEP reponse to a TMS pulse
+
+    required during initialization are
+
+    args
+    ----
+    chunk:np.ndarray
+        a data chunk as received from pylsl.StreamInlet.pull_chunk()
+    tstamps:np.ndarray
+        the timestamps of this  data chunk as received from pylsl.StreamInlet.pull_chunk()
+    onset_in_ms:float
+        the timestamp of the TMS pulse as e.g. received from pylsl.StreamInlet.pull_sample()
+
+    """
     chunk:np.ndarray
     tstamps:np.ndarray
+    onset_in_ms:float
     fs:int = 1000
-    pre_in_ms:float = 25
+    pre_in_ms:float = 30
     post_in_ms:float = 75
-    onset_in_ms:float=None
     mep_window_in_ms = [15, 50]
     
     
@@ -35,7 +48,8 @@ class Response():
     
     @property
     def mep_window(self):
-        mep_window = [self.onset+int(m*1000/self.fs) for m in self.mep_window_in_ms]
+        mep_window = [self.onset+int(m*1000/self.fs) 
+                        for m in self.mep_window_in_ms]
         return mep_window
     
     def get_trace(self, channel_idx:int=0):
@@ -45,6 +59,22 @@ class Response():
         return response
       
     def get_latency(self, channel_idx:int=0):
+         """the latency of the MEP in a specific channel
+
+        Based on the time of TMS given during initialization, and the hard-coded
+        pre_in_ms, post_in_ms and mep_window_in_ms calculates the latency 
+
+        args
+        ----
+        channel_idx:int
+            which channel to use for calculation of latency
+
+        returns
+        -------
+        vpp: List[np.ndarray,np.ndarray]
+            the latency in ms relative to the TMS pulse of the negative and the
+            positive peak
+        """
         bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
         data = self.chunk[self.mep_window[0]:self.mep_window[1], channel_idx]-bl        
         peakpos = [data.argmin(), data.argmax()]
@@ -55,16 +85,33 @@ class Response():
         return peakpos_in_ms
     
     def get_vpp(self, channel_idx:int=0):      
+        """the peak-to-peak amplitude of the MEP in a specific channel
+
+        Based on the time of TMS given during initialization, and the hard-coded
+        pre_in_ms, post_in_ms and mep_window_in_ms calculates the Vpp
+
+        args
+        ----
+        channel_idx:int
+            which channel to use for calculation of Vpp
+
+        returns
+        -------
+        vpp:np.ndarray
+            the peak-to-peak amplitude in native units of the data chunk
+        """
         bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
         data = self.chunk[self.mep_window[0]:self.mep_window[1], channel_idx]-bl        
         peakpos = [data.argmin(), data.argmax()]
         self.peakpos = [p + self.mep_window[0] for p in peakpos]
-        self.peakpos_in_ms = [p*1000/self.fs + self.mep_window_in_ms[0] + self.pre_in_ms for p in peakpos]        
+        self.peakpos_in_ms = [p*1000/self.fs + self.mep_window_in_ms[0] + 
+                                self.pre_in_ms for p in peakpos]        
         self.peakval = [data.min(), data.max()]
         return data.max()-data.min()
     
     def remove_jitter(self, break_threshold_seconds=1,
                       break_threshold_samples=500):
+        "deprecated: would remove jitter, but did reduce timing accuracy"              
         nsamples = len(self.tstamps)
         tdiff = 1.0 / self.fs if self.fs > 0 else 0.0
         self.rawtstamps = self.tstamps.copy()        
@@ -86,7 +133,8 @@ class Response():
             self.effective_srate = 0
             for range_i in ranges:
                 if range_i[1] > range_i[0]:
-                    # Calculate time stamps assuming constant intervals within the segment.
+                    # Calculate time stamps assuming constant intervals
+                    # within the segment.
                     indices = np.arange(range_i[0], range_i[1] + 1, 1)[:, None]
                     X = np.concatenate((np.ones_like(indices), indices), axis=1)
                     y = self.tstamps[indices,0]
@@ -105,12 +153,29 @@ class Response():
             self.effective_srate = 0
      
     def get_xaxis(self, stepsize=5):
+        "returns xticks, xticklabels and xlim for plotting with matplotlib"
+        
         xticks = np.arange(0, self.post-self.pre, stepsize*1000/self.fs)
         xlim = (0, self.post-self.pre)
-        xticklabels = (['{0:.0f}'.format(x) for x in np.arange(-self.pre_in_ms*1000/self.fs, (self.post_in_ms+stepsize)*1000/self.fs, stepsize)])
+        xticklabels = (['{0:.0f}'.format(x) for x in np.arange(
+                        -self.pre_in_ms*1000/self.fs, 
+                        (self.post_in_ms+stepsize)*1000/self.fs, stepsize)])
         return xticks, xticklabels, xlim
     
     def as_json(self, channel_idx:int=0):
+        """encodes the response as json
+
+        args
+        ----
+        channel_idx:int
+            which channel to use for calculation of MEP parameters
+
+        returns
+        -------
+        msg:str
+            a json-encoded dictionary to be sent to localite with 
+            _`coil.send_response`
+        """
         bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
         data = self.chunk[self.mep_window[0]:self.mep_window[1], channel_idx]-bl    
         mi,ma = [data.min(), data.max()]        
@@ -123,7 +188,7 @@ class Response():
         return msg
         
 class MockResponse():
-
+    "mocks a response for testing and development"
     def __new__(cls):
         return Response(chunk=np.random.random((1000,8)),
                    tstamps=np.atleast_2d(np.linspace(0,1000,1000)).T,
