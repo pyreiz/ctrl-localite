@@ -2,14 +2,14 @@ from distutils.core import setup
 
 
 setup(
-    name='dev-localite',
+    name='ctrl-localite',
     version='0.0.1',
     description='Control Magventure with LocaliteJSON',
     long_description='Toolbox to control a Magventure TMS with localites JSON-TCP-IP Interface',
     author='Robert Guggenberger',
     author_email='robert.guggenberger@uni-tuebingen.de',
-    url='https://github.com/stim-devices/dev-localite.git',
-    download_url='https://github.com/stim-devices/dev-localite.git',
+    url='https://github.com/pyreiz/ctrl-localite',
+    download_url='https://github.com/pyreiz/ctrl-localite',
     license='MIT',
     packages=['localite'],
     classifiers=[
