@@ -19,7 +19,9 @@ class Response():
     tstamps:np.ndarray
         the timestamps of this  data chunk as received from pylsl.StreamInlet.pull_chunk()
     onset_in_ms:float
-        the timestamp of the TMS pulse as e.g. received from pylsl.StreamInlet.pull_sample()
+        the timestamp of the TMS pulse as e.g. received from 
+        pylsl.StreamInlet.pull_sample() (i.e. slightly delayed)
+        or coil.trigger(), i.e. when command was sent
 
     """
     chunk:np.ndarray
@@ -59,7 +61,7 @@ class Response():
         return response
       
     def get_latency(self, channel_idx:int=0):
-         """the latency of the MEP in a specific channel
+        """the latency of the MEP in a specific channel
 
         Based on the time of TMS given during initialization, and the hard-coded
         pre_in_ms, post_in_ms and mep_window_in_ms calculates the latency 
@@ -75,6 +77,7 @@ class Response():
             the latency in ms relative to the TMS pulse of the negative and the
             positive peak
         """
+
         bl = self.chunk[self.pre:self.onset, channel_idx].mean(0)        
         data = self.chunk[self.mep_window[0]:self.mep_window[1], channel_idx]-bl        
         peakpos = [data.argmin(), data.argmax()]

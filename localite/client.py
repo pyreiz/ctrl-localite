@@ -49,7 +49,7 @@ class SmartClient(threading.Thread):
             try:
                 self.client.send(msg)
                 print(f'Send {msg} at {pylsl.local_clock()}')
-            except ConnectionResetError or ConnectionRefusedError:
+            except (ConnectionResetError, ConnectionRefusedError):
                 print("Connection Problems. I'll keep on trying to connect")
                 time.sleep(5)
                 self.client = Client(host=self.host, port=self.port)
@@ -59,7 +59,7 @@ class SmartClient(threading.Thread):
         try:
             with self.client_lock:
                 answer = self.client.request(msg)                        
-        except ConnectionResetError or ConnectionRefusedError:
+        except (ConnectionResetError, ConnectionRefusedError):
             print("Connection Problems. Retrying")
     
         print(f'Received {answer} for {msg} at {pylsl.local_clock()}')                
@@ -70,7 +70,7 @@ class SmartClient(threading.Thread):
         try:                                
             with self.client_lock:
                self.client.send(marker)                                
-        except ConnectionResetError or ConnectionRefusedError:
+        except (ConnectionResetError, ConnectionRefusedError):
             print("Connection Problems. Aborting for safety")
             return None
                 
@@ -95,7 +95,7 @@ class SmartClient(threading.Thread):
                 with self.client_lock:    
                     key, val = self.client.listen()       
                     logger.debug(key, val)
-            except ConnectionResetError or ConnectionRefusedError:
+            except (ConnectionResetError, ConnectionRefusedError):
                 print("Connection Problems. Retrying")
             
             
