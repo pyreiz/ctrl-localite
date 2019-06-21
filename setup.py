@@ -3,7 +3,7 @@ from distutils.core import setup
 
 setup(
     name='ctrl-localite',
-    version='0.0.1',
+    version='0.0.2',
     description='Control Magventure with LocaliteJSON',
     long_description='Toolbox to control a Magventure TMS with localites JSON-TCP-IP Interface',
     author='Robert Guggenberger',
