@@ -10,16 +10,16 @@ import liesl
 env =  Environment()
 env.coil = localite.Coil(host="134.2.117.173")
 env.majel = Majel(log=env.coil.push_marker)
-env.marker = liesl.open_streams(type='Markers',
-                                name="BrainVision RDA Markers",
-                                hostname='SEPHYS-CTRL')[0]
+env.marker = liesl.get_stream_matching(type='Markers',
+                                       name="BrainVision RDA Markers",
+                                       hostname='SEPHYS-CTRL')[0]
                                 #hostname='Patrick')[0]
-env.bvr = liesl.open_streams(type='EEG',
-                             name="BrainVision RDA",
-                             hostname='SEPHYS-CTRL')[0]
+env.bvr = liesl.get_streaminfo_matching(type='EEG',
+                                        name="BrainVision RDA",
+                                        hostname='SEPHYS-CTRL')
                              #hostname='Patrick')[0]
 env.buffer = liesl.RingBuffer(env.bvr, duration_in_ms=2000)
-env.channel_of_interest  = 'EDC_L'
+env.channel_of_interest  = 'EDC_R'
 env.setup()
 
 # %%        
