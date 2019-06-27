@@ -10,7 +10,17 @@ import pylsl
 import threading
 import time
 import logging
-logger = logging.getLogger('__name__')
+logger = logging.getLogger("localite.client")
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler(r"C:\Users\AGNPT-M-001\Desktop\localite.log")
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+logger.addHandler(ch)
+logger.debug('initialize logger to '+ r"C:\Users\AGNPT-M-001\Desktop\localite.log")
 # %%
 class SmartClient(threading.Thread):    
     "LSL based software marker streamer"
@@ -33,7 +43,7 @@ class SmartClient(threading.Thread):
         self.client_lock = threading.Lock()
         self.client = Client(host=self.host, port=self.port)
    
-        source_id = socket.gethostname()
+        source_id = '_'.join((socket.gethostname(), name))
         self.info = pylsl.StreamInfo(self.name, type='Markers', channel_count=1, nominal_srate=0, 
                                 channel_format='string', source_id=source_id)        
         self.outlet = pylsl.StreamOutlet(self.info)     
@@ -85,8 +95,8 @@ class SmartClient(threading.Thread):
         tstamp = pylsl.local_clock()
         print(f'Pushed {marker} at {tstamp}')
         with self.outlet_lock:            
-            self.outlet.push_sample([marker], tstamp)                   
-        
+            self.outlet.push_sample([marker], tstamp)
+                    
     def run(self):   
         self.is_running.set()
         print(self.info.as_xml())        
@@ -94,7 +104,6 @@ class SmartClient(threading.Thread):
             try:
                 with self.client_lock:    
                     key, val = self.client.listen()       
-                    logger.debug(key, val)
             except (ConnectionResetError, ConnectionRefusedError):
                 print("Connection Problems. Retrying")
             
@@ -109,7 +118,7 @@ class SmartClient(threading.Thread):
    
     
                 
-# %%            
+ # %%            
 class Client(object):
     """
      A LocaliteJSON socket client used to communicate with a LocaliteJSON socket server.
@@ -182,7 +191,7 @@ class Client(object):
         try:
             decoded = json.loads(msg)
         except json.JSONDecodeError as e:
-            logger.error(msg)
+            logger.error("JSONDecodeError: " +  msg)
             raise e
                 
         key = list(decoded.keys())[index]

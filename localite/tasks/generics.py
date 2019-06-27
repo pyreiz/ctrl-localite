@@ -213,6 +213,7 @@ def search_hotspot(trials=40, isi=(3.5,4.5),
         collection.append(response_marker)         
            
     majel.say(f'Durchgang beendet')
+    time.sleep(2)
     return collection
 # %%
 def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
@@ -304,7 +305,8 @@ def measure_rmt(channel='EDC_L',  threshold_in_uv=50,
             vals = amplitude_response[key]
             print('{0} -> {1:3.2f} ({2})'.format(key, sum(vals)/len(vals), vals))    
             
-    majel.say(f'Durchgang beendet')            
+    majel.say(f'Durchgang beendet') 
+    time.sleep(2)           
     return amplitude_response
 
 # %%
@@ -385,3 +387,4 @@ def free_mode(autotrigger=5, channel='EDC_L', isi=(3.5,4.5),
             break
         
     majel.say(f'Durchgang beendet')
+    time.sleep(2)
