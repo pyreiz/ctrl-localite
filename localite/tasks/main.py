@@ -8,7 +8,7 @@ from majel.majel import Majel
 import liesl
 from liesl import localhostname
 from liesl.files.session import Recorder, Session
-from reiz import clock
+
 # %%
 env =  Environment()
 env.coil = localite.Coil(host="134.2.117.173")
@@ -56,7 +56,7 @@ with session("hotspot-iteration"):
         candidate_collection = search_hotspot(trials=3, task_description='Ziel wechseln', env=env)
         collection.extend(candidate_collection)
     env.majel.say('Fertig')
-    clock.sleep(2)
+
 try:
     amp, pos, sorter  = find_highest(collection, channel=env.channel_of_interest)
     #env.majel.say('Höchste Antwort bei {0}. Stimulus mit {1} microVolt'.format(sorter[0]+1, amp[0]))

@@ -182,15 +182,18 @@ def search_hotspot(trials=40, isi=(3.5,4.5),
         
     counter = 0
     collection = []
-    automatic = False    
+    automatic = False   
+    has_started = False
     while counter < trials:
         if automatic: 
             print('Automatic trigger')    
             time.sleep(isi[0]+ (random.random()*(isi[1]-isi[0])))
             response = auto_trigger(coil, marker, buffer)
         else:           
-            print('Waiting for manual trigger')    
-            majel.say('Bereit')    
+            print('Waiting for manual trigger')            
+            if not has_started:
+                majel.say('Bereit')    
+                has_started = True
             response = manual_trigger(coil, marker, buffer)                
             if run_automatic:
                 automatic = True
@@ -208,10 +211,10 @@ def search_hotspot(trials=40, isi=(3.5,4.5),
         ax = axes[0,0]
         ax.text(-.15, 1.05, f'{counter} of {trials}', transform=ax.transAxes, fontsize=14,
                 verticalalignment='top', bbox=props)   
-
-        plt.pause(0.5)                    
         collection.append(response_marker)         
-           
+        plt.pause(0.05)
+        
+
     majel.say(f'Durchgang beendet')
     time.sleep(2)
     return collection
