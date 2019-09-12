@@ -54,12 +54,13 @@ class Response():
                         for m in self.mep_window_in_ms]
         return mep_window
     
-    def get_trace(self, channel_idx:int=0):
-        bl = self.chunk[self.pre:self.onset, channel_idx]        
+    def get_trace(self, channel_idx:int=0, baseline_correction:bool = True):
         response = self.chunk[self.pre:self.post, channel_idx].copy()     
-        response -= bl.mean()
+        if baseline_correction:
+            bl = self.chunk[self.pre:self.onset, channel_idx] 
+            response -= bl.mean()
         return response
-      
+
     def get_latency(self, channel_idx:int=0):
         """the latency of the MEP in a specific channel
 
