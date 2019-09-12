@@ -54,7 +54,25 @@ class Response():
                         for m in self.mep_window_in_ms]
         return mep_window
     
-    def get_trace(self, channel_idx:int=0, baseline_correction:bool = True):
+    def get_trace(self, channel_idx = 0, baseline_correction:bool = True):
+        """Cuts a chunk of data
+
+        Based on the given onset this function cuts out a trace
+        for one or more (if an slice is given) channel. It does a baseline
+        correction by default.
+
+        args
+        ----
+        channel_idx
+            which channel to use for calculation of latency.
+            Can be int or slice (to get multiple channels)
+
+        returns
+        -------
+        trace: np.ndarray
+            numpy arrray of shape (pre+post, channels)
+            Contains the trace or traces if multiple channels where given
+        """
         response = self.chunk[self.pre:self.post, channel_idx].copy()     
         if baseline_correction:
             bl = self.chunk[self.pre:self.onset, channel_idx] 
