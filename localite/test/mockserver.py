@@ -8,6 +8,20 @@ Mock LocaliteJSON Server for testing and debugging
 import socket
 import sys
 import datetime
+import time
+import random
+
+
+def random_message():
+    while True:
+        yield '{"coil_0_didt": "test_run"}'
+        time.sleep(random.randint(1, 5))
+        yield '{"status": "BLOCKED"}'
+        time.sleep(random.randint(1, 5))
+
+
+random_message = random_message()
+
 
 class MockServer(object):
     """
@@ -25,12 +39,13 @@ class MockServer(object):
     backlog = 5
     client = None
 
-    def __init__(self, host, port, verbose):
+    def __init__(self, host, port, verbose, independent):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind((host, port))
         self.socket.listen(self.backlog)
         self.verbose = verbose
+        self.independent = independent
         print('Creating TestServer at', host, ':', port)
 
     def __del__(self):
@@ -58,15 +73,21 @@ class MockServer(object):
         try:
             while True:
                 self.accept()
-                data = self.recv()
-                if self.verbose:
-                    print('Received', data, 'from', self.client_addr, 'at', datetime.datetime.now())
+                if self.independent:
+                    data = next(random_message)
+                    print('send', data, 'from', self.client_addr,
+                          'at', datetime.datetime.now())
+                else:
+                    data = self.recv()
+                    if self.verbose:
+                        print('Received', data, 'from', self.client_addr,
+                              'at', datetime.datetime.now())
                 self.send(data)
         except Exception as e:
             raise e
         finally:
             self.close()
-            
+
     def close(self):
         if self.client:
             self.client.close()
@@ -76,10 +97,9 @@ class MockServer(object):
             self.socket = None
 
 
-
 # helper functions #
 def _send(socket, data):
-    try:        
+    try:
         serialized = data.encode('ASCII')
     except (TypeError, ValueError):
         raise Exception('Message is not serializable')
@@ -88,25 +108,26 @@ def _send(socket, data):
 
 def _recv(socket):
     # read ASCII letter by letter until we reach a zero count of +{-}
-    def parse(counter, buffer):  
-        if counter is None:              
+    def parse(counter, buffer):
+        if counter is None:
             counter = 0
-        char = socket.recv(1).decode('ASCII')            
+        char = socket.recv(1).decode('ASCII')
         buffer.append(char)
         if char is '{':
             counter += 1
         if char is '}':
             counter -= 1
-        return counter, buffer  
-   
+        return counter, buffer
+
     buffer = []
     counter = None
     while counter is not 0:
         counter, buffer = parse(counter, buffer)
         # print(counter, buffer[-1])
-               
-    buffer = ''.join(buffer)  
-    return buffer    
+
+    buffer = ''.join(buffer)
+    return buffer
+
 
 def myip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -114,6 +135,7 @@ def myip():
     ip = s.getsockname()[0]
     s.close()
     return ip
+
 
 def parse_message():
     try:
@@ -124,9 +146,11 @@ def parse_message():
         data = '{"missing":"message"}'
     return data
 
+
 def single_command_only():
     print('Choose either -m for message or -t for TestServer')
     quit()
+
 
 def show_help():
     print('''
@@ -150,10 +174,9 @@ def show_help():
         ''')
     quit()
 
-class Messages():
-    gci = "{'get':'current_instrument'}"
+
 # %%
-if __name__ == '__main__': 
+if __name__ == '__main__':
     if len(sys.argv) < 2 or '-help' in sys.argv:
         show_help()
 
@@ -161,19 +184,29 @@ if __name__ == '__main__':
     host = myip()
     port = 6666
     verbose = False
+    independet = False
 
     if '-h' in sys.argv:
         host = sys.argv[sys.argv.index('-h')+1]
     if '-p' in sys.argv:
         port = int(sys.argv[sys.argv.index('-p')+1])
-    if  '-v' in sys.argv:
+    if '-i' in sys.argv:
+        independent = True
+    if '-v' in sys.argv:
         verbose = True
     if '-t' in sys.argv and '-m' in sys.argv:
         single_command_only()
         quit()
+    if '-m' in sys.argv:
+        msg = sys.argv[sys.argv.index('-m')+1]
+        print(msg)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((host, port))
+            _send(s, msg)
 
     # start test server
     if '-t' in sys.argv:
-        server = MockServer(host, port, verbose)            
+        server = MockServer(host, port, verbose, independent)
         server.loop()
-    # start client socket    
+
+    # start client socket
