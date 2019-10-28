@@ -175,6 +175,11 @@ def show_help():
     quit()
 
 
+def mock():
+    server = MockServer("127.0.0.1", 6666, True, True)
+    server.loop()
+
+
 # %%
 if __name__ == '__main__':
     if len(sys.argv) < 2 or '-help' in sys.argv:

@@ -12,6 +12,10 @@ setup(
     download_url='https://github.com/pyreiz/ctrl-localite',
     license='MIT',
     packages=['localite'],
+    entry_points={'console_scripts': [
+        'localiteLSL=localite.clients.lsl_client:main',
+        'localiteMock=localite.test.mockserver:mock'],
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
@@ -27,5 +31,5 @@ setup(
         'Topic :: Scientific/Engineering :: Human Machine Interfaces',
         'Topic :: Scientific/Engineering :: Medical Science Apps.',
         'Topic :: Software Development :: Libraries',
-        ]
+    ]
 )

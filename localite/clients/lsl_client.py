@@ -8,9 +8,8 @@ A client to communicate with the Localite to control the magventure.
 import socket
 import json
 import pylsl
-import threading
 import time
-from typing import Callable
+import threading
 from logging import getLogger
 logger = getLogger("LocaliteLSL")
 # %%
@@ -104,6 +103,7 @@ class LocaliteLSL(threading.Thread):
                 key, val, tstamp = self.client.listen()
             except (ConnectionResetError, ConnectionRefusedError):
                 print("Connection Problems. Retrying")
+                time.sleep(5)
                 continue
 
             if key in ('coil_0_didt', 'coil_1_didt'):  # localite has triggered
@@ -116,6 +116,10 @@ class LocaliteLSL(threading.Thread):
         print("Shutting down LocaliteLSL listening at", self.host, self.port)
 
 
-if __name__ == "__main__":
+def main():
     client = LocaliteLSL()
     client.start()
+
+
+if __name__ == "__main__":
+    main()
