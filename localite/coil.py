@@ -5,7 +5,7 @@
 @author: Robert Guggenberger
 """
 
-from localite.client import get_client
+from client import get_client
 from json import dumps as _dumps
 # %%
 

@@ -11,6 +11,8 @@ import pylsl
 import threading
 import time
 from typing import Callable
+from logging import getLogger
+logger = getLogger("LocaliteClient")
 
 def is_port_in_use(host, port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -54,6 +56,22 @@ class SmartClient():
 
 # %%
 
+def read_msg(client):
+    'receive byte for byte to read the header telling the message length'
+    #parse the message until it is a valid json 
+    msg = bytearray(b' ')
+    while True:
+        try:
+            prt = client.recv(1)                    
+            msg += prt                  
+            return json.loads(msg.decode('ascii')) # because the first byte is b' '                     
+        except json.decoder.JSONDecodeError:
+            pass
+        except Exception as e:
+            print(e)
+            break
+        
+    return None
 
 class ReceiverServer(threading.Thread):
 
@@ -149,15 +167,15 @@ class ReceiverClient(threading.Thread):
                 time.sleep(5)
                 self.client = Client(host=self.host, port=self.port)
 
-    def request(self, msg):
+    def request(self, msg):        
         try:
             with self.client_lock:
                 answer = self.client.request(msg)
+            print(f'Received {answer} for {msg} at {pylsl.local_clock()}')
+            return answer
         except (ConnectionResetError, ConnectionRefusedError):
-            print("Connection Problems. Retrying")
-
-        print(f'Received {answer} for {msg} at {pylsl.local_clock()}')
-        return answer
+            print("Connection Problems. Retry")
+            return None
 
     def trigger(self, id: str):
         marker = '{"single_pulse":"COIL_' + id + '"}'
@@ -260,7 +278,7 @@ class Client(object):
         try:
             decoded = json.loads(msg)
         except json.JSONDecodeError as e:
-            logger.error("JSONDecodeError: " + msg)
+            print("JSONDecodeError: " + msg)
             raise e
 
         key = list(decoded.keys())[index]
@@ -291,5 +309,5 @@ class Client(object):
 # 5.22 ms ± 3.29 ms per loop (mean ± std. dev. of 1000 runs, 1 loop each)
 if __name__ == "__main__":
 
-    client = get_client()
+    client = get_client(host="134.2.117.173")
   
