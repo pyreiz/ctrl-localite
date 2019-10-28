@@ -72,14 +72,14 @@ class Client(object):
     def listen(self):
         self.connect()
         try:
-            key, val = read_msg(self.socket)
             tstamp = pylsl.local_clock()
+            key, val = read_msg(self.socket)
         finally:
             self.close()
         return key, val, tstamp
 
 
-class ReceiverClient(threading.Thread):
+class LocaliteLSL(threading.Thread):
     "LSL based software marker streamer"
 
     def __init__(self, name: str = "localite_marker", host: str = "127.0.0.1",
@@ -106,9 +106,8 @@ class ReceiverClient(threading.Thread):
                 print("Connection Problems. Retrying")
                 continue
 
-            marker = json.dumps({key: val})
-
             if key in ('coil_0_didt', 'coil_1_didt'):  # localite has triggered
+                marker = json.dumps({key: val})
                 print(f'Pushed {marker} at {tstamp}')
                 outlet.push_sample([marker], tstamp)
 
@@ -118,5 +117,5 @@ class ReceiverClient(threading.Thread):
 
 
 if __name__ == "__main__":
-    client = ReceiverClient()
+    client = LocaliteLSL()
     client.start()
