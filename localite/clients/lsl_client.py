@@ -11,6 +11,7 @@ import pylsl
 import time
 import threading
 import argparse
+import sys
 from logging import getLogger
 logger = getLogger("LocaliteLSL")
 
@@ -83,7 +84,7 @@ class Client(object):
 class LocaliteLSL(threading.Thread):
     "LSL based software marker streamer"
 
-    def __init__(self, name: str = "localite_marker", host: str = "127.0.0.1",
+    def __init__(self, name: str = "localiteLSL", host: str = "127.0.0.1",
                  port=6666):
         threading.Thread.__init__(self)
         self.host = host
@@ -95,10 +96,17 @@ class LocaliteLSL(threading.Thread):
         self.is_running.set()
         print(f"Looking at {self.host}:{self.port} for a localite server.")
         self.client = Client(host=self.host, port=self.port)
-        source_id = '_'.join((socket.gethostname(), self.name))
+        source_id = '_'.join((socket.gethostname(), self.name, self.host))
         info = pylsl.StreamInfo(self.name, type='Markers', channel_count=1,
                                 nominal_srate=0, channel_format='string',
                                 source_id=source_id)
+
+        found = pylsl.resolve_byprop("source_id", info.source_id(), timeout=3)
+        if found:
+            print(found[0].as_xml())
+            print("There is already a localiteLSL with the same source_id running")
+            sys.exit(1)
+
         outlet = pylsl.StreamOutlet(info)
         print(info.as_xml())
         while self.is_running.is_set():
