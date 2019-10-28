@@ -176,7 +176,16 @@ def show_help():
 
 
 def mock():
-    server = MockServer("127.0.0.1", 6666, True, True)
+    import argparse
+    parser = argparse.ArgumentParser(prog='localiteMock')
+    parser.add_argument("--host", type=str, default="127.0.0.1",
+                        help="the host at which the mock localite server will resode")
+    parser.add_argument("--port", type=int, default=6666,
+                        help="the port of the mock localite server")
+
+    args, unknonw = parser.parse_known_args()
+    server = MockServer(host=args.host, port=args.port,
+                        verbose=True, independent=True)
     server.loop()
 
 

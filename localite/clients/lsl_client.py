@@ -10,8 +10,10 @@ import json
 import pylsl
 import time
 import threading
+import argparse
 from logging import getLogger
 logger = getLogger("LocaliteLSL")
+
 # %%
 
 
@@ -91,6 +93,7 @@ class LocaliteLSL(threading.Thread):
 
     def run(self):
         self.is_running.set()
+        print(f"Looking at {self.host}:{self.port} for a localite server.")
         self.client = Client(host=self.host, port=self.port)
         source_id = '_'.join((socket.gethostname(), self.name))
         info = pylsl.StreamInfo(self.name, type='Markers', channel_count=1,
@@ -117,7 +120,14 @@ class LocaliteLSL(threading.Thread):
 
 
 def main():
-    client = LocaliteLSL()
+    parser = argparse.ArgumentParser(prog='localiteLSL')
+    parser.add_argument("--host", type=str, default="127.0.0.1",
+                        help="the host at which the localite server resides")
+    parser.add_argument("--port", type=int, default=6666,
+                        help="the port of the localite server")
+
+    args, unknonw = parser.parse_known_args()
+    client = LocaliteLSL(host=args.host, port=args.port)
     client.start()
 
 
