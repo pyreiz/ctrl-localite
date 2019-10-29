@@ -24,7 +24,7 @@ def decode(msg: str, index=0):
     try:
         decoded = json.loads(msg)
     except json.JSONDecodeError as e:
-        print("JSONDecodeError: " + msg)
+        print("JSONDecodeError: \"" + msg + "\"")
         raise e
     key = list(decoded.keys())[index]
     val = decoded[key]
@@ -58,9 +58,13 @@ class Client(object):
         self.host = host
         self.port = port
         self.timeout = timeout
+        self.lock = threading.Lock()
+        self.qlock = threading.Lock()
+        self.queue = []
 
     def connect(self):
         'connect wth the remote server'
+        self.lock.acquire()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
         self.socket.settimeout(self.timeout)
@@ -69,9 +73,15 @@ class Client(object):
         'closes the connection'
         self.socket.shutdown(1)
         self.socket.close()
+        self.lock.release()
         del self.socket
 
     def listen(self):
+        with self.qlock:
+            while len(self.queue) > 0:
+                msg = self.queue.pop()
+                self.send(msg)
+
         self.connect()
         try:
             tstamp = pylsl.local_clock()
@@ -79,6 +89,21 @@ class Client(object):
         finally:
             self.close()
         return key, val, tstamp
+
+    def request_response(self, coil_id):
+        def append():
+            msg = '"{\"get\":\"coil_' + coil_id + '_response\"}'
+            self.qlock.acquire()
+            self.queue.append(msg)
+            self.qlock.release()
+        t = threading.Timer(1, append)
+        t.start()
+
+    def send(self, msg: str):
+        self.connect()
+        self.socket.sendall(msg.encode('ascii'))
+        print(f'Send {msg} at {pylsl.local_clock()}')
+        self.close()
 
 
 class LocaliteLSL(threading.Thread):
@@ -114,10 +139,24 @@ class LocaliteLSL(threading.Thread):
                 key, val, tstamp = self.client.listen()
             except (ConnectionResetError, ConnectionRefusedError):
                 print("Connection Problems. Retrying")
-                time.sleep(5)
+                time.sleep(1)
                 continue
 
+#            print("Ignoring", json.dumps(
+#                {key: val}), "at", pylsl.local_clock())
             if key in ('coil_0_didt', 'coil_1_didt'):  # localite has triggered
+                marker = json.dumps({key: val})
+                print(f'Pushed {marker} at {tstamp}')
+                outlet.push_sample([marker], tstamp)
+                # request the response
+                coil_id = key.split('_')[1]
+                self.client.request_response(coil_id)
+
+            elif key in ("error"):
+                print(json.dumps({key: val}))
+            elif val == "null":
+                pass
+            elif key.split('_')[1] in ("0", "1"):
                 marker = json.dumps({key: val})
                 print(f'Pushed {marker} at {tstamp}')
                 outlet.push_sample([marker], tstamp)
@@ -134,7 +173,7 @@ def main():
     parser.add_argument("--port", type=int, default=6666,
                         help="the port of the localite server")
 
-    args, unknonw = parser.parse_known_args()
+    args, unknown = parser.parse_known_args()
     client = LocaliteLSL(host=args.host, port=args.port)
     client.start()
 

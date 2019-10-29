@@ -28,7 +28,7 @@ def get_client(host='127.0.0.1', port=6666):
 def kill_client(host='127.0.0.1', port=6667):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
-        msg = json.dumps({"command":"die"})
+        msg = json.dumps({"command":"die"}).encode("ascii")
         s.send(msg)
 
 
@@ -84,7 +84,6 @@ class ReceiverServer(threading.Thread):
 
     def stop(self):
         self.is_running.clear()
-        print("Shutting down RecevierServer at", self.host, self.port)
 
     def run(self):
         interface = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -92,7 +91,7 @@ class ReceiverServer(threading.Thread):
         interface.settimeout(1)
         interface.bind((self.host, self.port))
         interface.listen(1)
-        print('Server distributing Coil Clients opened at {0}:{1}'.format(
+        print('Server managing Localite Clients opened at {0}:{1}'.format(
             self.host, self.port))
         self.is_running.set()
         while self.is_running.is_set():
@@ -108,9 +107,14 @@ class ReceiverServer(threading.Thread):
                     client.close()
             except socket.timeout:
                 pass
+
             if message["command"] == "die":
+                print("Attempting to stop client")
                 self.stop_client()
                 self.stop()
+        else:
+            print("Shutting down ReceiverServer at", self.host, self.port)
+
 
 
 # %%
@@ -119,7 +123,7 @@ class ReceiverServer(threading.Thread):
 class ReceiverClient(threading.Thread):
     "LSL based software marker streamer"
 
-    def __init__(self, name:str="localite_marker", host:str="127.0.0.1", port=6666):
+    def __init__(self, name:str="localite_marker", host:str="127.0.0.1",    port=6666):
         threading.Thread.__init__(self)
         self.host = host
         self.port = port
@@ -135,7 +139,15 @@ class ReceiverClient(threading.Thread):
         self.outlet_lock = threading.Lock()
         self.is_running = threading.Event()
 
+    def stop(self):
+        print("Attempting to stop")
+        self.is_running.clear()
+        print("Shutting down ReceiverClient for", self.host, self.port)  
+        del self.outlet
+
     def run(self):
+        print('Client manager listing to localite opened at {0}:{1}'.format(
+            self.host, self.port))
         self.is_running.set()
         print(self.info.as_xml())
         while self.is_running.is_set():
@@ -143,7 +155,7 @@ class ReceiverClient(threading.Thread):
                 with self.client_lock:
                     key, val = self.client.listen()
             except (ConnectionResetError, ConnectionRefusedError):
-                print("Connection Problems. Retrying")
+                print("Connection Problems. Check that host={self.host} is valid.")
 
             tstamp = pylsl.local_clock()
             marker = json.dumps({key: val})
@@ -152,11 +164,9 @@ class ReceiverClient(threading.Thread):
                 print(f'Pushed {marker} at {tstamp}')
                 with self.outlet_lock:
                     self.outlet.push_sample([marker], tstamp)
-
-    def stop(self):
-        self.is_running.clear()
-        print("Shutting down ReceiverClient for", self.host, self.port)
-
+        else:
+            print("Shutting down ReceiverClient for", self.host, self.port)  
+ 
     def send(self, msg: str):
         with self.client_lock:
             try:
