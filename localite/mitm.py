@@ -128,7 +128,7 @@ class ManInTHeMiddle(threading.Thread):
 
 
 def create_outlet(name: str = "localite_markers") -> [StreamOutlet, StreamInfo]:
-    """Create a Marker StreamOutlet with the given name. 
+    """Create a Marker StreamOutlet with the given name.
 
     Raise an ConnectionAbortedError if the source_id is already in use somewhere else
 
@@ -148,10 +148,11 @@ def create_outlet(name: str = "localite_markers") -> [StreamOutlet, StreamInfo]:
     info.desc().append_child_value("streamer", str(
         pkg_resources.get_distribution("localite")))
 
-    if pylsl.resolve_byprop("source_id", source_id, timeout=3):
-        raise ConnectionAbortedError(
-            f"There is already a localiteLSL with the same source_id {source_id} running"
-        )
+    # if pylsl.resolve_byprop("source_id", source_id, timeout=3):
+    #     raise ConnectionAbortedError(
+    #         f"There is already a localiteLSL with the same source_id {source_id} running"
+    #     )
+
     outlet = StreamOutlet(info)
     return outlet, info
 
@@ -184,10 +185,14 @@ class MarkerStreamer(threading.Thread):
         print("]")
 
     def run(self):
-        outlet, info = create_outlet(name=self.name)
-        self.is_running.set()
+        try:
+            outlet, info = create_outlet(name=self.name)
+        except ConnectionAbortedError as e:
+            print(e)
+            return
         print("Starting MarkerStreamer")
         print(info.as_xml())
+        self.is_running.set()
         while self.is_running.is_set():
             try:
                 marker, tstamp = self.queue.get(block=False)
