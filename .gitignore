@@ -3,3 +3,6 @@
 */*_pycache_*
 */*.mypy_cache*
 *.mypy_cache*
+mypy.ini
+.vscode*
+lib/*

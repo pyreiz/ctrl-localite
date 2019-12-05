@@ -1,2 +1,1 @@
-json
-socket
+pylsl >= 1.13
