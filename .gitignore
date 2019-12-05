@@ -6,3 +6,4 @@
 mypy.ini
 .vscode*
 lib/*
+.coverage

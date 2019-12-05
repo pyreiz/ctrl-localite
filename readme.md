@@ -1,3 +1,4 @@
+[![pytest-status](https://github.com/pyreiz/ctrl-localite/workflows/pytest/badge.svg)](https://github.com/pyreiz/ctrl-localite/actions) [![Coverage Status](https://coveralls.io/repos/github/pyreiz/ctrl-localite/badge.svg?branch=master)](https://coveralls.io/github/pyreiz/ctrl-localite?branch=master)
 ### ctrl-localite
 
 A repository to control localite 4.0

@@ -15,7 +15,7 @@ def ms(capsys):
     assert "Shutting down" in out
 
 
-def test_outlet(ms, capsys):
+def test_markerstreamer(ms, capsys):
     t0 = time.time()
     ms.start()
     ms.await_running()
