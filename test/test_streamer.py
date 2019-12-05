@@ -2,7 +2,7 @@ from pylsl import resolve_streams, resolve_byprop, StreamInlet
 from pytest import fixture
 import pkg_resources
 import time
-from localite.client import push, available
+from localite.local import push, available, start
 import json
 
 
@@ -16,7 +16,7 @@ def test_markerstreamer(ms, capsys):
 
 
 def test_direct_queueing(ms, capsys):
-    msg = json.dumps({"command": "test"})
+    msg = json.dumps({"ignore": "test"})
     tstamp = None
     ms.push(msg, tstamp)
     time.sleep(0.5)
@@ -24,5 +24,27 @@ def test_direct_queueing(ms, capsys):
     assert str(msg) in out
 
 
-def test_mitm(mitm, capsys):
-    pass
+def test_mitm_available(mitm, capsys):
+    assert available() == True
+    out, err = capsys.readouterr()
+    assert "Sending {'cmd': 'ping'} " in out
+
+
+def test_mitm_push(mitm, capsys):
+    msg = {"ignore": "test"}
+    tstamp = None
+    push(msg, tstamp)
+    time.sleep(0.1)
+    out, err = capsys.readouterr()
+    assert "Sending {'ignore': 'test'} at None" in out
+    time.sleep(0.1)
+    out, err = capsys.readouterr()
+    assert "Pushed {'ignore': 'test'} at None" in out
+
+
+def test_mitm_singleton(mitm, capsys):
+    out, err = capsys.readouterr()
+    start()
+    time.sleep(5)
+    out, err = capsys.readouterr()
+    assert "dgesgs" in out

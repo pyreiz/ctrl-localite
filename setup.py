@@ -18,7 +18,7 @@ setup(
     packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
-            "localite-stream=localite.cli:main",
+            "ctrl-localite=localite.cli:ctrl",
             "localite-mock=localite.mock:main",
         ],
     },

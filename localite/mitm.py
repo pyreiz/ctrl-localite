@@ -6,7 +6,7 @@ import queue
 import json
 from time import sleep
 import pkg_resources
-
+from localite.local import available
 
 # -----------------------------------------------------------------------------
 def _read_msg(client):
@@ -41,18 +41,21 @@ class ManInTheMiddle(threading.Thread):
 
     def __init__(
         self,
+        name="localite_marker",
         own_host: str = "127.0.0.1",
         own_port: int = 6667,
         localite_host: str = "127.0.0.1",
         localite_port: int = 6666,
     ):
         threading.Thread.__init__(self)
+        self.name = name
         self.localite_host = localite_host
         self.localite_port = localite_port
         self.host = own_host
         self.port = own_port
         self.is_running = threading.Event()
         self.is_running.clear()
+        self.singleton = threading.Event()
 
     def stop(self):
         "stop the server"
@@ -73,16 +76,14 @@ class ManInTheMiddle(threading.Thread):
 
         # we check whether there is already an instance running, and if so
         # let it keep control by returning
-        # if available(self.port):
-        #     self.singleton.clear()
-        #     if self.verbose:
-        #         print("Server already running on that port")
-        #     self.is_running.set()
-        #     return
-        # else:
-        #     self.singleton.set()
-        #     if self.verbose:
-        #         print("This server is the original instance")
+        if available(self.port):
+            self.singleton.clear()
+            print("Server already running on that port")
+            self.is_running.set()
+            return
+        else:
+            self.singleton.set()
+            print("This server is the original instance")
 
         # create the MarkerStreamer, i.e. the LSL-Server that distributes the
         # strings received from the Listener
@@ -156,11 +157,6 @@ def create_outlet(name: str = "localite_markers") -> [StreamOutlet, StreamInfo]:
     info.desc().append_child_value(
         "streamer", str(pkg_resources.get_distribution("localite"))
     )
-
-    # if pylsl.resolve_byprop("source_id", source_id, timeout=3):
-    #     raise ConnectionAbortedError(
-    #         f"There is already a localiteLSL with the same source_id {source_id} running"
-    #     )
 
     outlet = StreamOutlet(info)
     return outlet, info

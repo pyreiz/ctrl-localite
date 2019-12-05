@@ -1,6 +1,6 @@
 from pytest import fixture
 import time
-from localite.client import available, kill
+from localite.local import available, kill
 from localite.mitm import ManInTheMiddle
 from localite.mitm import MarkerStreamer
 

@@ -2,6 +2,12 @@ import socket
 from pylsl import local_clock
 import json
 from typing import Dict, Any
+from subprocess import Popen
+
+
+def start():
+    "Start the Localite-ManInTheMiddle as an independent process"
+    Popen(["ctrl-localite"])
 
 
 def push(

@@ -14,3 +14,20 @@ events as LSL Marker stream
 - localiteMock
 
 mocks a localite TCP/IP-json server for testing and development
+
+
+### Information Flow
+
+``` dot
+    digraph Flow{ 
+        node [shape = circle]
+        node [style=filled]
+        rankdir=LR;            
+        QUEUE -> CTRL
+        EXT -> QUEUE        
+        CTRL -> LOC
+        CTRL -> MRK
+        LOC -> QUEUE        
+        
+    }
+```
