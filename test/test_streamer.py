@@ -11,8 +11,7 @@ def test_markerstreamer(ms, capsys):
     out = str(StreamInlet(sinfo).info().as_xml())
     assert "<name>localite_marker</name>" in out
     assert "<type>Markers</type>" in out
-    v = str(
-        pkg_resources.get_distribution("localite"))
+    v = str(pkg_resources.get_distribution("localite"))
     assert f"<streamer>{v}</streamer>" in out
 
 
@@ -23,3 +22,7 @@ def test_direct_queueing(ms, capsys):
     time.sleep(0.5)
     out, err = capsys.readouterr()
     assert str(msg) in out
+
+
+def test_mitm(mitm, capsys):
+    pass

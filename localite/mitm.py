@@ -8,16 +8,6 @@ from time import sleep
 import pkg_resources
 
 
-def myip() -> str:
-    """returns a string with the computers default IP address
-    """
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    ip = s.getsockname()[0]
-    s.close()
-    return ip
-
-
 # -----------------------------------------------------------------------------
 def _read_msg(client):
     "receive byte for byte to read the header telling the message length"
@@ -40,7 +30,7 @@ def _read_msg(client):
     return ("", None)
 
 
-class ManInTHeMiddle(threading.Thread):
+class ManInTheMiddle(threading.Thread):
     """Main class to manage the LSL-MarkerStream as man-in-the-middle
 
     when started, it automatically checks whether there is already a MarkerServer
@@ -56,16 +46,24 @@ class ManInTHeMiddle(threading.Thread):
         localite_host: str = "127.0.0.1",
         localite_port: int = 6666,
     ):
+        threading.Thread.__init__(self)
         self.localite_host = localite_host
         self.localite_port = localite_port
-        self.own_host = own_host
-        self.own_port = own_port
+        self.host = own_host
+        self.port = own_port
         self.is_running = threading.Event()
         self.is_running.clear()
 
     def stop(self):
         "stop the server"
         self.is_running.clear()
+
+    def await_running(self):
+        print("[", end="")
+        while not self.is_running.is_set():
+            print(".", end="")
+            sleep(0.5)
+        print("]")
 
     def run(self):
         """wait for clients to connect and send messages.
@@ -75,46 +73,55 @@ class ManInTHeMiddle(threading.Thread):
 
         # we check whether there is already an instance running, and if so
         # let it keep control by returning
-        if available(self.port):
-            self.singleton.clear()
-            if self.verbose:
-                print("Server already running on that port")
-            self.is_running.set()
-            return
-        else:
-            self.singleton.set()
-            if self.verbose:
-                print("This server is the original instance")
+        # if available(self.port):
+        #     self.singleton.clear()
+        #     if self.verbose:
+        #         print("Server already running on that port")
+        #     self.is_running.set()
+        #     return
+        # else:
+        #     self.singleton.set()
+        #     if self.verbose:
+        #         print("This server is the original instance")
 
-        # create the MarkerStreamer, i.e. the LSL-Server that distributes the strings received from the Listener
-        markerstreamer = _MarkerStreamer(name=self.name)
+        # create the MarkerStreamer, i.e. the LSL-Server that distributes the
+        # strings received from the Listener
+        markerstreamer = MarkerStreamer(name=self.name)
         markerstreamer.start()
-        # create the ListenerServer, i.e. the TCP/IP Server that waits for messages for forwarding them to the MarkerStreamer
+        # create the ListenerServer, i.e. the TCP/IP Server that waits for
+        # messages for forwarding them to the MarkerStreamer
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.settimeout(1)
         listener.bind((self.host, self.port))
         listener.listen(1)
-        if self.verbose:
-            print(
-                "Server mediating an LSL Outlet opened at {0}:{1}".format(
-                    self.host, self.port
-                )
+        print(
+            "Server mediating an LSL Outlet opened at {0}:{1}".format(
+                self.host, self.port
             )
+        )
+
+        markerstreamer.await_running()
         self.is_running.set()
         while self.is_running.is_set():
             try:
                 client, address = listener.accept()
                 try:
-                    marker, tstamp = _read_msg(client)
-                    if marker.lower() == "ping":  # connection was only pinged
+                    msg, tstamp = _read_msg(client)
+                    ping, poison = False, False
+                    for k, v in msg.items():
+                        if k == "cmd" and v.lower() == "ping":
+                            ping = True
+                        elif k == "cmd" and v.lower() == "poison-pill":
+                            poison = True
+                    if ping:
                         print("Received ping from", address)
-                    elif marker.lower() == "poison-pill":
+                        continue
+                    if poison:
                         print("Swallowing poison pill")
                         self.is_running.clear()
                         break
-                    else:
-                        markerstreamer.push(marker, tstamp)
+                    markerstreamer.push(json.dumps(msg), tstamp)
                 except socket.timeout:
                     print("Client from {address} timed out")
                 finally:
@@ -127,6 +134,7 @@ class ManInTHeMiddle(threading.Thread):
         markerstreamer.stop()
 
 
+# ------------------------------------------------------------------------------
 def create_outlet(name: str = "localite_markers") -> [StreamOutlet, StreamInfo]:
     """Create a Marker StreamOutlet with the given name.
 
@@ -145,8 +153,9 @@ def create_outlet(name: str = "localite_markers") -> [StreamOutlet, StreamInfo]:
 
     info.desc().append_child_value("software", "localite TMS Navigator 4.0")
     info.desc().append_child_value("stimulator", "MagVenture")
-    info.desc().append_child_value("streamer", str(
-        pkg_resources.get_distribution("localite")))
+    info.desc().append_child_value(
+        "streamer", str(pkg_resources.get_distribution("localite"))
+    )
 
     # if pylsl.resolve_byprop("source_id", source_id, timeout=3):
     #     raise ConnectionAbortedError(
@@ -198,8 +207,7 @@ class MarkerStreamer(threading.Thread):
                 marker, tstamp = self.queue.get(block=False)
                 outlet.push_sample([marker], tstamp)
                 self.queue.task_done()
-                print(
-                    f"Pushed {marker} from {tstamp} at {pylsl.local_clock()}")
+                print(f"Pushed {marker} from {tstamp} at {pylsl.local_clock()}")
             except queue.Empty:
                 sleep(0.001)
         print(f"Shutting down MarkerStreamer: {self.name}")

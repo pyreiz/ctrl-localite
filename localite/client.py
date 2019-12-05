@@ -4,9 +4,13 @@ import json
 from typing import Dict, Any
 
 
-def push(marker: Dict[str, Any] = {"command": "ping"},
-         tstamp: float = None,
-         host="127.0.0.1", port: int = 6667, verbose=True):
+def push(
+    marker: Dict[str, Any] = {"command": "ping"},
+    tstamp: float = None,
+    host="127.0.0.1",
+    port: int = 6667,
+    verbose=True,
+):
     "a functional interface to pushing a message"
     Client(host=host, port=port, verbose=verbose).push(marker, tstamp)
 
@@ -31,7 +35,36 @@ def available(port: int = 6667, host: str = "127.0.0.1", verbose=True) -> bool:
     """
     c = Client(host=host, port=port)
     try:
-        c.push({"command": "ping"}, local_clock())
+        c.push({"cmd": "ping"}, local_clock())
+        return True
+    except ConnectionRefusedError as e:
+        if verbose:
+            print(e)
+            print(f"Markerserver at {host}:{port} is not available")
+        return False
+
+
+def kill(port: int = 6667, host: str = "127.0.0.1", verbose=True) -> bool:
+    """kill the  markerserver is already  at that port
+
+    args
+    ----
+
+    host: str
+        the ip of the markerserver (defaults to localhost)
+
+    port: int
+        the port number of the markerserver (defaults to 6667)
+
+    returns
+    -------
+
+    status: bool
+        True if message was sent, False if server was not available
+    """
+    c = Client(host=host, port=port)
+    try:
+        c.push({"cmd": "poison-pill"}, local_clock())
         return True
     except ConnectionRefusedError as e:
         if verbose:
@@ -48,8 +81,7 @@ class Client:
         self.port = port
         self.verbose = verbose
 
-    def push(self, marker: Dict[str, Any] = {"command": "ping"},
-             tstamp: float = None):
+    def push(self, marker: Dict[str, Any] = {"command": "ping"}, tstamp: float = None):
         "connects, sends a message, and closes the connection"
         self.connect()
         self.write(marker, tstamp)
