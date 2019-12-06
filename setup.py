@@ -15,7 +15,7 @@ setup(
     url="https://github.com/pyreiz/ctrl-localite",
     download_url="https://github.com/pyreiz/ctrl-localite",
     license="MIT",
-    packages=setuptools.find_packages(),
+    packages=["localite", "localite.flow"],
     entry_points={
         "console_scripts": [
             "ctrl-localite=localite.cli:ctrl",
