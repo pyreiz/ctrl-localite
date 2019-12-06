@@ -26,14 +26,16 @@ def ext(queue, capsys):
     assert "Payload(fmt='cmd', msg='poison-pill'" in out
     assert "Shutting EXT down" in out
     assert kill() == False
-
-
-def test_read_msg(ext):
-    assert ext.is_running.is_set() == True
+    assert push("cmd", "ping") == False
 
 
 def test_push(ext, capsys):
+    assert ext.is_running.is_set() == True
     push("cmd", "ping")
     out, err = capsys.readouterr()
     assert "Sending" in out
+    assert push("wrong", "ping") == True
+    time.sleep(0.1)
+    out, err = capsys.readouterr()
+    assert "is no valid Payload" in out
 
