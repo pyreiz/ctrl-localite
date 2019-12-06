@@ -18,10 +18,8 @@ mocks a localite TCP/IP-json server for testing and development
 
 ### Information Flow
 
-Packages are required to be a valid JSON
-``` dot
-    
-    digraph Flow{ 
+<img src='https://g.gravizo.com/svg?
+    digraph Flow { 
         rankdir=LR;     
         {
         node [shape = circle]
@@ -40,7 +38,8 @@ Packages are required to be a valid JSON
         MRK -> to
         LOC -> lo
     }
-```
+'/>
+
 The EXT receives a payload via JSON over TCP-IP. Payloads have to have the form
 `[<fmt>:str, <message>:str, <tstamp>:int]`. The fmt defines how the message will be distributed. Only the following targets for `fmt` are valid: `["cmd", "mrk", "loc"]`. Invalid fmts will not be forwarded, and their message ignored. 
 
