@@ -18,6 +18,7 @@ mocks a localite TCP/IP-json server for testing and development
 
 ### Information Flow
 
+Packages are required to be a valid JSON
 ``` dot
     digraph Flow{ 
         node [shape = circle]
