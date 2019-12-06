@@ -20,7 +20,10 @@ mocks a localite TCP/IP-json server for testing and development
 
 Packages are required to be a valid JSON
 ``` dot
+    
     digraph Flow{ 
+        rankdir=LR;     
+        {
         node [shape = circle]
         node [style=filled]
         rankdir=LR;            
@@ -28,9 +31,18 @@ Packages are required to be a valid JSON
         EXT -> QUEUE        
         CTRL -> LOC
         CTRL -> MRK
-        LOC -> QUEUE        
-        
+        LOC -> QUEUE   
+        }
+        fo[label="", shape=plaintext] 
+        fo -> EXT
+        to[label="", shape=plaintext] 
+        lo[label="", shape=plaintext] 
+        MRK -> to
+        LOC -> lo
     }
 ```
-The EXT receives payloads via JSON over TCP-IP. Payloads have to have the form
-`["fmt", "message", tstamp]`. Only the following fmts are valid: `["cmd", "mrk", "loc"]` and will be forwarded, all other payloads are ignored. Whether a message is valid, depends on the recipient and will be evaluated there.
+The EXT receives a payload via JSON over TCP-IP. Payloads have to have the form
+`[<fmt>:str, <message>:str, <tstamp>:int]`. The fmt defines how the message will be distributed. Only the following targets for `fmt` are valid: `["cmd", "mrk", "loc"]`. Invalid fmts will not be forwarded, and their message ignored. 
+
+Whether the message part of the payload is valid depends on the recipient and will be evaluated there.
+

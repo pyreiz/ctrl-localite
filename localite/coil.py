@@ -7,10 +7,11 @@
 
 from localite.client import get_client
 from json import dumps as _dumps
+
 # %%
 
 
-class Coil():
+class Coil:
     """Coil is a user-friendly interface to control the TMS and Localite
 
     during instantiation, it opens an LSL-Marker-StreamOutlet which runs in the 
@@ -37,7 +38,7 @@ class Coil():
         return self._client.request("coil_" + self.id + "_" + msg)
 
     def send(self, key: str, val: str):
-        self._client.send('{"coil_' + self.id + '_' + key + '": ' + val + '}')
+        self._client.send('{"coil_' + self.id + "_" + key + '": ' + val + "}")
 
     def activate(self):
         self._client.send('{"current_instrument":"COIL_' + self.id + '"}')
@@ -111,7 +112,11 @@ class Coil():
 
     @property
     def position_reached(self):
-        return True if self.request("position_control")['position_reached'] == "TRUE" else False
+        return (
+            True
+            if self.request("position_control")["position_reached"] == "TRUE"
+            else False
+        )
 
     @property
     def status(self):
@@ -144,4 +149,4 @@ class Coil():
             the channel for which to calculate the response
         """
         msg = response.as_json(channel_idx)
-        self._client.send('{"coil_' + self.id + '_response": ' + msg + '}')
+        self._client.send('{"coil_' + self.id + '_response": ' + msg + "}")

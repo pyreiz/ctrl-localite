@@ -8,3 +8,4 @@ mypy.ini
 lib/*
 .coverage
 htmlcov/*
+.pytest_cache

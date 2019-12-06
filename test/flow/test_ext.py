@@ -21,7 +21,7 @@ def ext(queue, capsys):
     while ext.is_running.is_set():
         pass
     assert not available()
-    time.sleep(0.5)
+    time.sleep(0.1)
     out, err = capsys.readouterr()
     assert "Payload(fmt='cmd', msg='poison-pill'" in out
     assert "Shutting EXT down" in out

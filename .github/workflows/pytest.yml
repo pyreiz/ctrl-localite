@@ -25,6 +25,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install coverage
+        pip install pytest-cov
         pip install pytest
         pytest
     - name: Coveralls

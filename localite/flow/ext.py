@@ -1,7 +1,7 @@
 import socket
 import threading
 import json
-from localite.flow.payload import Payload, has_poison, has_ping, Queue
+from localite.flow.payload import Payload, has_poison, has_ping, Queue, put_in_queue
 from pylsl import local_clock
 from typing import Dict, Any
 from subprocess import Popen
@@ -70,7 +70,7 @@ class EXT(threading.Thread):
                 print(f"Received {payload} from {address}")
                 if not payload or has_ping(payload):
                     continue
-                self.queue.put(payload)
+                put_in_queue(payload, self.queue)
                 if has_poison(payload):
                     self.is_running.clear()
                     break

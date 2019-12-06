@@ -8,8 +8,8 @@ TimeStamp = Union[
     int, None
 ]  #: A TimeStamp, which is usually derived from pylsl.local_clock, but can be None
 Message = NewType(
-    "Message", Union[str, Dict[str, str]]
-)  # : The Message, which can be a dictionary or a simple string
+    "Message", str
+)  # : The Message, which can be e.g.  json-dumped variable or a plain string
 
 
 @dataclass
@@ -32,15 +32,18 @@ def has_ping(payload: Payload) -> bool:
     return True if (payload.fmt, payload.msg) == ("cmd", "ping") else False
 
 
-def get_no_wait(queue: Queue) -> Union[Payload, None]:
+def get_from_queue(queue: Queue) -> Union[Payload, None]:
     "get the next item in the queue, or None, if empty"
     from queue import Empty
-    from time import sleep
 
     try:
         payload = queue.get_nowait()
         queue.task_done()
         return payload
     except Empty:
-        sleep(0.001)
         return None
+
+
+def put_in_queue(payload: Payload, queue: Queue) -> None:
+    "put the next item in the queue"
+    queue.put(payload)
