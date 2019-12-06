@@ -17,6 +17,31 @@ mocks a localite TCP/IP-json server for testing and development
 
 
 ### Information Flow
+![Alt text](https://g.gravizo.com/source/custom_mark10?https://raw.githubusercontent.com/pyreiz/ctrl-localite/develop/README.md)
+<details> 
+<summary></summary>
+custom_mark10
+    digraph Flow { 
+        rankdir=LR;     
+        {
+        node [shape = circle]
+        node [style=filled]
+        rankdir=LR;            
+        QUEUE -> CTRL
+        EXT -> QUEUE        
+        CTRL -> LOC
+        CTRL -> MRK
+        LOC -> QUEUE   
+        }
+        fo[label="", shape=plaintext] 
+        fo -> EXT
+        to[label="", shape=plaintext] 
+        lo[label="", shape=plaintext] 
+        MRK -> to
+        LOC -> lo
+    }
+custom_mark10
+</details>
 
 <img src='https://g.gravizo.com/svg?
     digraph Flow { 
