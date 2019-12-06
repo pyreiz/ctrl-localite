@@ -1,6 +1,8 @@
 from typing import NewType, Dict, Union, Tuple
 from dataclasses import dataclass
 from queue import Queue
+import json
+
 
 TimeStamp = Union[
     int, None
@@ -28,3 +30,17 @@ def has_poison(payload: Payload) -> bool:
 def has_ping(payload: Payload) -> bool:
     "return whether there is a ping in the Payload"
     return True if (payload.fmt, payload.msg) == ("cmd", "ping") else False
+
+
+def get_no_wait(queue: Queue) -> Union[Payload, None]:
+    "get the next item in the queue, or None, if empty"
+    from queue import Empty
+    from time import sleep
+
+    try:
+        payload = queue.get_nowait()
+        queue.task_done()
+        return payload
+    except Empty:
+        sleep(0.001)
+        return None

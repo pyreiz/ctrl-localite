@@ -32,3 +32,5 @@ Packages are required to be a valid JSON
         
     }
 ```
+The EXT receives payloads via JSON over TCP-IP. Payloads have to have the form
+`["fmt", "message", tstamp]`. Only the following fmts are valid: `["cmd", "mrk", "loc"]` and will be forwarded, all other payloads are ignored. Whether a message is valid, depends on the recipient and will be evaluated there.

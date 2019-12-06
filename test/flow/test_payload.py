@@ -1,4 +1,4 @@
-from localite.flow.payload import has_poison, Payload
+from localite.flow.payload import has_poison, Payload, Queue, get_no_wait
 
 
 def test_has_poison():
@@ -14,3 +14,12 @@ def test_has_no_poison():
     payload = Payload("command", "poison-pill", 12345)
     assert not has_poison(payload)
 
+
+def test_get_no_wait():
+    q = Queue()
+    payload = Payload("cmd", "test", 12345)
+    q.put(payload)
+    received = get_no_wait(q)
+    assert received == payload
+    received = get_no_wait(q)
+    assert received is None

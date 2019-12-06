@@ -1,7 +1,3 @@
-from logging import basicConfig
-
-basicConfig(level=1)
-
 from pytest import fixture
 from localite.flow.ext import EXT, read_msg, available, kill, push
 from localite.flow.payload import Queue
@@ -37,7 +33,7 @@ def test_read_msg(ext):
 
 
 def test_push(ext, capsys):
-    push({"cmd": "ping"})
+    push("cmd", "ping")
     out, err = capsys.readouterr()
     assert "Sending" in out
 
