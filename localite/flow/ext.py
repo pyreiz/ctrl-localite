@@ -1,7 +1,7 @@
 import socket
 import threading
 import json
-from localite.flow.payload import Payload, has_poison, has_ping, Queue, put_in_queue
+from localite.flow.payload import Payload, has_poison, Queue, put_in_queue
 from pylsl import local_clock
 from typing import Dict, Any
 from subprocess import Popen
@@ -68,7 +68,7 @@ class EXT(threading.Thread):
                 client, address = listener.accept()
                 payload = read_msg(client)
                 print(f"Received {payload} from {address}")
-                if not payload or has_ping(payload):
+                if not payload:
                     continue
                 put_in_queue(payload, self.queue)
                 if has_poison(payload):
@@ -114,11 +114,6 @@ class Client:
         "closes the connection"
         self.interface.shutdown(1)
         self.interface.close()
-
-
-def start():
-    "Start the Localite-ManInTheMiddle as an independent process"
-    Popen(["ctrl-localite"])
 
 
 def push_payload(

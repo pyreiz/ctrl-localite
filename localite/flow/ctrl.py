@@ -1,5 +1,11 @@
 import threading
-from localite.flow.payload import Queue, get_from_queue, has_poison, put_in_queue
+from localite.flow.payload import (
+    Queue,
+    get_from_queue,
+    has_poison,
+    put_in_queue,
+    has_ping,
+)
 from time import sleep
 
 
@@ -12,7 +18,7 @@ class CTRL(threading.Thread):
         self.mrk = mrk
 
     def await_running(self):
-        while not self.is_running.is_set():
+        while not self.is_running.is_set():  # pragma no cover
             pass
 
     def run(self):
@@ -30,6 +36,8 @@ class CTRL(threading.Thread):
                     put_in_queue(payload, self.mrk)
                     self.is_running.clear()
                     break
+                elif has_ping(payload):
+                    continue
                 else:
                     print("Unknown cmd: {0}".format(payload.msg))
             elif payload.fmt == "loc":

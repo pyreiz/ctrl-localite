@@ -28,11 +28,25 @@ def ctrl(capsys):
     assert locp == killpayload
 
 
-def test_ctrl(ctrl, capsys):
+def test_cmd(ctrl, capsys):
     ctrl.queue.put(Payload("cmd", "test", 12345))
     time.sleep(0.1)
     pipe = capsys.readouterr()
     assert "Unknown cmd: test" in pipe.out
+
+
+def test_unknown(ctrl, capsys):
+    ctrl.queue.put(Payload("unk", "test", 12345))
+    time.sleep(0.1)
+    pipe = capsys.readouterr()
+    assert "Unknown fmt: unk" in pipe.out
+
+
+def test_ping(ctrl, capsys):
+    ctrl.queue.put(Payload("cmd", "ping", 12345))
+    time.sleep(0.1)
+    pipe = capsys.readouterr()
+    assert "Received Payload(fmt='cmd', msg='ping', tstamp=12345)" in pipe.out
 
 
 def test_forwarding(ctrl, capsys):

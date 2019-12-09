@@ -3,9 +3,11 @@ import json
 import pylsl
 import threading
 import time
+from pylsl import local_clock
+from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
 
 # %%
-class LOC(threading.Thread):
+class localiteClient:
     """
      A LocaliteJSON socket client used to communicate with a LocaliteJSON socket server.
     example
@@ -24,7 +26,6 @@ class LOC(threading.Thread):
     socket = None
 
     def __init__(self, host: str, port: int = 6666):
-        threading.Thread.__init__(self)
         self.host = host
         self.port = port
 
@@ -95,3 +96,100 @@ class LOC(threading.Thread):
         self.close()
         return None if val == "NONE" else val
 
+
+class LOC(threading.Thread):
+    def __init__(self, outbox: Queue, inbox: Queue, host: str, port: int = 6666):
+        threading.Thread.__init__(self)
+        self.inbox = inbox
+        self.outbox = outbox
+        self.host = host
+        self.port = port
+        self.is_running = threading.Event()
+
+    def await_running(self):
+        while not self.is_running.is_set():
+            pass
+
+    def run(self):
+        self.is_running.set()
+        client = localiteClient(host=self.host, port=self.port)
+        while self.is_running.is_set():
+            payload = get_from_queue(self.inbox)
+            if payload is None:
+                continue
+            if payload.fmt == "cmd":
+                if payload.msg == "poison-pill":
+                    self.is_running.clear()
+                    break
+            elif payload.fmt == "loc":
+                answer = None
+                if "get" in payload.msg:
+                    answer = client.request(payload.msg)
+                else:
+                    client.send(payload.msg)
+                if answer is not None:
+                    pl = Payload("mrk", answer, local_clock())
+                    put_in_queue(pl, self.outbox)
+
+        print("Shutting LOC down")
+
+
+# ------------------------------------------------------------------------------
+
+
+class Mock(threading.Thread):
+    def __init__(self, host: str = "127.0.0.1", port: int = 6666):
+        threading.Thread.__init__(self)
+        self.host = host
+        self.port = port
+        self.is_running = threading.Event()
+
+    def await_running(self):
+        while not self.is_running.is_set():
+            pass
+
+    @staticmethod
+    def read_msg(client: socket.socket) -> dict:
+        "parse the message"
+        msg = bytearray(b" ")
+        while True:
+            try:
+                prt = client.recv(1)
+                msg += prt
+                msg = json.loads(msg.decode("ascii"))
+                return msg
+            except json.JSONDecodeError as e:  # pragma no cover
+                pass
+            except Exception as e:
+                print(e)
+                return None
+
+    def run(self):
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind((self.host, self.port))
+        listener.listen(1)  # one  unaccepted client is allowed
+        self.is_running.set()
+        while self.is_running.is_set():
+            try:
+                client, address = listener.accept()
+                msg = self.read_msg(client)
+                if msg is None:
+                    continue
+                if "cmd" in msg.keys() and "poison-pill" in msg.values():
+                    self.is_running.clear()
+                    break
+                else:
+                    client.send(json.dumps(msg))
+            except Exception as e:
+                print(e)
+            finally:
+                client.shutdown(socket.SHUT_WR)
+                client.close()
+        print("Shutting LOC-MOCK down")
+
+    def kill(self):
+        client = localiteClient(self.host, self.port)
+        msg = {"cmd": "poison-pill"}
+        msg = json.dumps(msg)
+        client.send(msg)
