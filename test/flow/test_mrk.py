@@ -1,9 +1,48 @@
 from pytest import fixture
-from localite.flow.mrk import MRK
+from localite.flow.mrk import MRK, Buffer, Receiver
 from localite.flow.payload import Queue, Payload
 import time
 import pylsl
 import threading
+
+
+def test_buffer():
+    b = Buffer()
+    inp = [1, 2, 3, 4, 5]
+    for i in inp:
+        b.put(i)
+    out = [i for i in b]
+    assert inp == out
+
+
+def test_receiver():
+    outlet = pylsl.StreamOutlet(
+        pylsl.StreamInfo(
+            name="test_marker",
+            type="Marker",
+            channel_count=1,
+            nominal_srate=0,
+            channel_format="string",
+        )
+    )
+    r = Receiver(name="test_marker")
+    #    r = Receiver(name="Liesl-Mock-Marker")
+    r.start()
+    time.sleep(5)
+
+    inp = ["1", "2", "3", "4", "5"]
+    for i in inp:
+        outlet.push_sample([i])
+    time.sleep(0.1)
+    out = [i[0][0] for i in r]
+    assert inp == out
+    inp = ["1", "2", "3", "4", "5"]
+    for i in inp:
+        outlet.push_sample([i])
+    time.sleep(0.1)
+    r.clear()
+    out = [i[0][0] for i in r]
+    assert out == []
 
 
 @fixture

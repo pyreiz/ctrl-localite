@@ -1,13 +1,60 @@
-from pylsl import StreamInfo, StreamOutlet, local_clock
+from pylsl import StreamInfo, StreamInlet, StreamOutlet, local_clock, resolve_stream
 from localite.flow.payload import Queue, get_from_queue
 import socket
 import pkg_resources
 import datetime
 import threading
 import time
+from typing import Tuple, Any
+from collections import deque
 
 
-def make_outlet(name="localite_marker") -> [StreamOutlet, StreamInfo]:
+class Buffer:
+    def __init__(self):
+        self.queue = deque()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return self.queue.pop()
+        except IndexError:
+            raise StopIteration
+
+    def clear(self):
+        self.queue.clear()
+
+    def put(self, item: Any):
+        self.queue.appendleft(item)
+
+
+class Receiver(threading.Thread):
+    def __init__(self, name="localite_marker"):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.buffer = Buffer()
+        self.is_running = threading.Event()
+
+    def __iter__(self):
+        return iter(self.buffer)
+
+    def clear(self):
+        self.buffer.clear()
+
+    def run(self):
+        sinfo = resolve_stream("name", self.name)[0]
+        inlet = StreamInlet(sinfo)
+        inlet.pull_chunk()
+        self.is_running.set()
+        while self.is_running.is_set():
+            mrk, tstamp = inlet.pull_chunk()
+            for m, z in zip(mrk, tstamp):
+                if m != []:
+                    self.buffer.put((m, z))
+
+
+def make_outlet(name="localite_marker") -> Tuple[StreamOutlet, StreamInfo]:
     source_id = "_at_".join((name, socket.gethostname()))
     info = StreamInfo(
         name,

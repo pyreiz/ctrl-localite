@@ -3,7 +3,7 @@ import json
 import pylsl
 import threading
 import time
-from typing import List
+from typing import List, Union
 from pylsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
 
@@ -32,8 +32,6 @@ class localiteClient:
     response = Client().connect(host, port).send(data).recv_close()
     """
 
-    socket = None
-
     def __init__(self, host: str, port: int = 6666):
         self.host = host
         self.port = port
@@ -54,14 +52,14 @@ class localiteClient:
         self.socket.sendall(msg.encode("ascii"))
         return self
 
-    def read(self) -> dict:
+    def read(self) -> Union[None, str]:
         "parse the message"
-        msg = bytearray(b" ")
+        bmsg = bytearray(b" ")
         while True:
             try:
                 prt = self.socket.recv(1)
-                msg += prt
-                msg = json.loads(msg.decode("ascii"))
+                bmsg += prt
+                msg = json.loads(bmsg.decode("ascii"))
                 return msg
             except json.JSONDecodeError as e:  # pragma no cover
                 pass

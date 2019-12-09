@@ -1,57 +1,57 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""User-interface to control the TMS coil via LocaliteJSON
-
-@author: Robert Guggenberger
 """
-
-from localite.client import get_client
-from json import dumps as _dumps
-
-# %%
+User-interface to control the TMS
+"""
+from localite.flow.ext import push
+from functools import partial
+from localite.flow.mrk import Receiver
 
 
 class Coil:
     """Coil is a user-friendly interface to control the TMS and Localite
-
-    during instantiation, it opens an LSL-Marker-StreamOutlet which runs in the 
-    background, continously reads the TCP-IP messages sent from localite, and
-    forwards whenever a stimulus was applied. Additionally, you can forward
-    your own markers using `~.push_marker` or `~.push_dictionary`
-
-    it wraps a SmartClient, and processes Responses
     """
 
-    def __init__(self, coil: int = 0, **kwargs):
+    def __init__(self, coil: int = 0, host: str = "127.0.0.1", port: int = 6667):
         self.id = coil
-        self._client = get_client(**kwargs)
+        self.receiver = Receiver(name="localite_marker")
+        self.receiver.start()
+        self.push_mrk = partial(push, fmt="mrk", host=host, port=port)
+        self.push_loc = partial(push, fmt="loc", host=host, port=port)
 
-    def push_dictionary(self, marker: dict):
-        "json encodes a dictionary before pushing it with `~.push_marker`"
-        self._client.push_marker(_dumps(marker))
+    def push(self, msg: str):
+        self.push_mrk(msg=msg)
+        self.push_loc(msg=msg)
 
     def push_marker(self, marker: str):
         "pushes a str to the Marker-Stream running in the background"
-        self._client.push_marker(marker)
+        self.push_mrk(msg=marker)
 
-    def request(self, msg: str):
-        return self._client.request("coil_" + self.id + "_" + msg)
-
-    def send(self, key: str, val: str):
-        self._client.send('{"coil_' + self.id + "_" + key + '": ' + val + "}")
+    def send_key_val(self, key: str, val: str):
+        self.push('{"coil_' + self.id + "_" + key + '": ' + val + "}")
 
     def activate(self):
-        self._client.send('{"current_instrument":"COIL_' + self.id + '"}')
+        self.push('{"current_instrument":"COIL_' + self.id + '"}')
 
     def trigger(self):
-        """trigger a tms pulse for the currently selected coil
+        "trigger a single pulse"
+        self.push('{"single_pulse": "coil_' + self.id + '"}')
 
-        returns
-        -------
-        tstamp:float
-            the pylsl timestamp when the trigger command was sent via TCP-IP
+    def request(self, msg: str) -> str:
+        """receive an answer from localite 
+        
+        receive markers from the MRK outlet until the request has passed
+        through the flow. The next available marker should be the answer
         """
-        return self._client.trigger(self.id)
+        self.receiver.clear()
+        self.push(msg)
+        passed = False
+        while not passed:
+            try:
+                if not passed:
+                    passed = next(iter(self.receiver))[0] == msg
+                else:
+                    return next(iter(self.receiver))[0]
+            except StopIteration:
+                pass
 
     @property
     def id(self):
@@ -121,32 +121,3 @@ class Coil:
     @property
     def status(self):
         return self.request("status")
-
-    @property
-    def response(self):
-        return self.request("response")
-
-    def set_response(self, response, channel_idx: int = 0):
-        """send the response in localite
-
-        THe TMS-Navigator software must be set to receive them. Do so by 
-        selecting in 'Benutzereinstellungen', under "Stimulation Response",
-        the option "JSONStimulationResponseSource.xml"
-
-        Additionally, note that apparently, responses are queued, and processed 
-        in FIFO at each triggered pulse, which means you could send a response
-        before you actually triggered. Additionally, there is a time-out from
-        the Localite-side, which is by default 10000ms, i.e. 10s. If the 
-        response is send later than this time after the trigger, it is ignored
-        for the correct trigger, and might instead be used inadvertently for
-        a later trigger.
-
-        args
-        ----
-        response:localite.response.Response
-            the response class 
-        channel_idx:int
-            the channel for which to calculate the response
-        """
-        msg = response.as_json(channel_idx)
-        self._client.send('{"coil_' + self.id + '_response": ' + msg + "}")

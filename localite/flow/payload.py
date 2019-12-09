@@ -7,15 +7,15 @@ import json
 TimeStamp = Union[
     int, None
 ]  #: A TimeStamp, which is usually derived from pylsl.local_clock, but can be None
-Message = NewType(
-    "Message", str
-)  # : The Message, which can be e.g.  json-dumped variable or a plain string
+Message = (
+    str  # : The Message, which can be e.g.  json-dumped variable or a plain string
+)
 
 
 @dataclass
 class Payload:
     fmt: str = ""
-    msg: Message = ""
+    msg: str = ""
     tstamp: TimeStamp = None
 
 
