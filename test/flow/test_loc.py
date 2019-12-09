@@ -1,8 +1,9 @@
-from pytest import fixture
 from .mock_localite import Mock
+from pytest import fixture
 from localite.flow.loc import LOC, localiteClient, json
 from localite.flow.payload import Queue, Payload, put_in_queue, get_from_queue
 import time
+
 
 host = "127.0.0.1"
 port = 6666
