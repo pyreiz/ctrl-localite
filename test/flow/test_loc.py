@@ -51,7 +51,7 @@ def test_loc_running(loc):
 
 
 def test_get(loc, mock, capsys):
-    payload = Payload("loc", '{"get": "property"}', 12345)
+    payload = Payload("loc", '{"get": "coil_0_amplitude"}', 12345)
     put_in_queue(payload, loc.inbox)
     time.sleep(0.5)
     recv = []
@@ -62,19 +62,23 @@ def test_get(loc, mock, capsys):
             break
 
     assert pl.fmt == "mrk"
-    assert pl.msg == '{"property": "answer"}'
-    assert json.loads(pl.msg) == {"property": "answer"}
+    assert pl.msg == '{"coil_0_amplitude": "answer"}'
 
 
-def test_set(loc, mock, capsys):
-    pl = Payload("loc", '{"set": "test"}', 12345)
+def test_invalid(loc, mock, capsys):
+    pipe = capsys.readouterr()
+    pl = Payload("loc", '{"garbage": "garbage"}', 12345)
     put_in_queue(pl, loc.inbox)
+    time.sleep(0.5)
+    pipe = capsys.readouterr()
+    assert "LOC:INVALID Payload" in pipe.out
 
 
 def test_valid():
     def pl(msg: str) -> Payload:
         return Payload(fmt="loc", msg=msg)
 
+    assert not is_valid(Payload(fmt="mrk", msg='{"get":"test_xase"}'))
     assert not is_valid(pl('{"get":"test_xase"}'))
     assert is_valid(pl('{"get":"pointer_position"}'))
     assert is_valid(

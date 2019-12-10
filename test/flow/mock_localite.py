@@ -46,13 +46,16 @@ class Mock(threading.Thread):
         cnt = 0
         from queue import Full
 
+        modulo = len(ignored_localite_messages)
         while is_running.is_set():
             time.sleep(1)
+
             cnt += 1
-            if cnt % 5 == 0:
+            if cnt > modulo + 1:
+                cnt = 0
+            elif cnt > modulo:
                 msg = {"coil_0_position": "None"}
             else:
-
                 msg = ignored_localite_messages[cnt]
             try:
                 outqueue.put_nowait(msg)

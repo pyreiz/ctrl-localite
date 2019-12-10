@@ -18,6 +18,8 @@ ignored_localite_messages = [
 
 def is_valid(payload: Payload) -> bool:
     try:
+        if payload.fmt != "loc":
+            return False
         msg = json.loads(payload.msg)
         key = list(msg.keys())[0]
         val = msg[key]
@@ -203,6 +205,9 @@ class LOC(threading.Thread):
                     self.is_running.clear()
                     break
             elif payload.fmt == "loc":
+                print(payload)
+                if not is_valid(payload):
+                    print("LOC:INVALID", payload)
                 answer = None
                 dec = json.loads(payload.msg)
                 if "get" in dec.keys():
