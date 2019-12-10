@@ -1,6 +1,6 @@
 from .mock_localite import Mock
 from pytest import fixture
-from localite.flow.loc import LOC, localiteClient, json
+from localite.flow.loc import LOC, localiteClient, json, is_valid
 from localite.flow.payload import Queue, Payload, put_in_queue, get_from_queue
 import time
 
@@ -70,3 +70,46 @@ def test_set(loc, mock, capsys):
     pl = Payload("loc", '{"set": "test"}', 12345)
     put_in_queue(pl, loc.inbox)
 
+
+def test_valid():
+    def pl(msg: str) -> Payload:
+        return Payload(fmt="loc", msg=msg)
+
+    assert not is_valid(pl('{"get":"test_xase"}'))
+    assert is_valid(pl('{"get":"pointer_position"}'))
+    assert is_valid(
+        pl(
+            '{"coil_0_response": {"mepmaxtime": 25, "mepamplitude": 50, "mepmin": -25, "mepmax": 25} }'
+        )
+    )
+    assert (
+        is_valid(
+            pl(
+                '{"coil_0_response": {"mepmaxtime": -1, "mepamplitude": 50, "mepmin": -25, "mepmax": 25} }'
+            )
+        )
+        == False
+    )
+    assert (
+        is_valid(
+            pl(
+                '{"coil_0_response": {"mepmaxtime": 25, "mepamplitude": 50, "garbage": -25, "mepmax": 25} }'
+            )
+        )
+        == False
+    )
+    assert (
+        is_valid(
+            pl(
+                '{"coil_0_response": {"mepmaxtime": 25, "mepamplitude": 50, "mepmin": -25, "mepmax": 999999999} }'
+            )
+        )
+        == False
+    )
+    assert is_valid(pl('{"single_pulse":"COIL_0"}'))
+    assert is_valid(pl('{"coil_0_amplitude": 20}'))
+    assert is_valid(pl('{"coil_0_amplitude": -1}')) == False
+    assert is_valid(pl('{"coil_0_target_index": 20}'))
+    assert is_valid(pl('{"coil_0_target_index": -1}')) == False
+    assert is_valid(pl('{"current_instrument": "POINTER"}'))
+    assert is_valid(pl('{"garbage": "garbage"}')) == False

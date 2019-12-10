@@ -99,6 +99,7 @@ def test_sending_out(mrk):
                     self.running = False
             self.msg = msg
             self.t1 = t1
+            del stream
 
     l = Listener()
     l.start()
@@ -111,3 +112,4 @@ def test_sending_out(mrk):
         pass
     assert abs(l.t1[0] - t0) < 0.001
     assert l.msg[0][0] == pl.msg
+    l.running = False
