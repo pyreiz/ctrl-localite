@@ -3,7 +3,7 @@ import json
 import pylsl
 import threading
 import time
-from typing import List, Union
+from typing import List, Union, Dict
 from pylsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
 from itertools import count
@@ -119,7 +119,7 @@ class localiteClient:
         "connect wth the remote server"
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        self.socket.settimeout(None)
+        self.socket.settimeout(0.1)
 
     def close(self):
         "closes the connection"
@@ -143,7 +143,7 @@ class localiteClient:
             except json.JSONDecodeError as e:  # pragma no cover
                 pass
             except Exception as e:  # pragma no cover
-                print("locCLIENT:READ:", e)
+                print("LCL:READ:", e)
                 return None
 
     def listen(self):
@@ -167,16 +167,24 @@ class localiteClient:
             key = list(answer.keys())[0]
             val = answer[key]
             val = None if val == "NONE" else val
-            print("locCLIENT:RECV", key, val)
+            print("LCL:RECV", key, val)
         self.close()
         return json.dumps({key: val})
 
 
 class LOC(threading.Thread):
-    def __init__(self, outbox: Queue, inbox: Queue, host: str, port: int = 6666):
+    def __init__(
+        self,
+        outbox: Queue,
+        inbox: Queue,
+        host: str,
+        port: int = 6666,
+        ignore: List[Dict[str, str]] = ignored_localite_messages,
+    ):
         threading.Thread.__init__(self)
         self.inbox = inbox
         self.outbox = outbox
+        self.ignore = ignore
         self.host = host
         self.port = port
         self.is_running = threading.Event()
@@ -188,37 +196,41 @@ class LOC(threading.Thread):
     def run(self):
         self.is_running.set()
         client = localiteClient(host=self.host, port=self.port)
-        print("Starting LOC")
+        print(f"LOC {self.host}:{self.port} started")
         while self.is_running.is_set():
-            payload = get_from_queue(self.inbox)
-            if payload is None:
-                msg = client.listen()
-                print("LOC:MSG", msg)
-                if msg in ignored_localite_messages:
-                    continue
-                else:
-                    pl = Payload("mrk", msg, local_clock())
-                    put_in_queue(pl, self.outbox)
+            try:
+                payload = get_from_queue(self.inbox)
+                print(f"LOC:RECV:{payload}")
+                if payload is None:
+                    msg = client.listen()
+                    print("LOC:MSG", msg)
+                    if msg in self.ignore:
+                        continue
+                    else:
+                        print("LOC:MSG", msg)
+                        pl = Payload("mrk", msg, local_clock())
+                        put_in_queue(pl, self.outbox)
 
-            elif payload.fmt == "cmd":
-                if payload.msg == "poison-pill":
-                    self.is_running.clear()
-                    break
-            elif payload.fmt == "loc":
-                print(payload)
-                if not is_valid(payload):
-                    print("LOC:INVALID", payload)
-                answer = None
-                dec = json.loads(payload.msg)
-                if "get" in dec.keys():
-                    answer = client.request(payload.msg)
-                    print("LOC:REQU", payload.msg)
-                else:
-                    client.send(payload.msg)
-                    print("LOC:SENT", payload.msg)
-                if answer is not None:
-                    print("LOC:RECV:", answer)
-                    pl = Payload("mrk", answer, local_clock())
-                    put_in_queue(pl, self.outbox)
-
+                elif payload.fmt == "cmd":
+                    if payload.msg == "poison-pill":
+                        self.is_running.clear()
+                        break
+                elif payload.fmt == "loc":
+                    if not is_valid(payload):
+                        print("LOC:INVALID", payload)
+                    answer = None
+                    dec = json.loads(payload.msg)
+                    if "get" in dec.keys():
+                        answer = client.request(payload.msg)
+                        print("LOC:REQU", payload.msg)
+                    else:
+                        client.send(payload.msg)
+                        print("LOC:SENT", payload.msg)
+                    if answer is not None:
+                        print("LOC:RECV:", answer)
+                        pl = Payload("mrk", answer, local_clock())
+                        put_in_queue(pl, self.outbox)
+            except Exception as e:
+                print("LOC:EXC", e)
+                break
         print("Shutting LOC down")

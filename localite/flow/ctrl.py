@@ -29,7 +29,7 @@ class CTRL(threading.Thread):
             if payload is None:
                 sleep(0.001)
                 continue
-            print(f"Received {payload} in CTRL")
+            print(f"CTRL:RECV {payload}")
             if payload.fmt == "cmd":
                 if has_poison(payload):
                     put_in_queue(payload, self.loc)
@@ -39,11 +39,11 @@ class CTRL(threading.Thread):
                 elif has_ping(payload):
                     continue
                 else:
-                    print("Unknown cmd: {0}".format(payload.msg))
+                    print("CTRL:CMD {0} unknown".format(payload.msg))
             elif payload.fmt == "loc":
                 put_in_queue(payload, self.loc)
             elif payload.fmt == "mrk":
                 put_in_queue(payload, self.mrk)
             else:
-                print("Unknown fmt: {0}".format(payload.fmt))
+                print("CTRL:FMT {0} fmt".format(payload.fmt))
         print("Shutting CTRL down")

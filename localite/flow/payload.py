@@ -18,6 +18,9 @@ class Payload:
     msg: str = ""
     tstamp: TimeStamp = None
 
+    def __str__(self):
+        return f"{self.fmt}:{self.msg} @ {self.tstamp:.5f}"
+
 
 def has_poison(payload: Payload) -> bool:
     "return whether there is a poison-pill in the Payload"

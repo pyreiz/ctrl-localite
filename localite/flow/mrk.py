@@ -85,7 +85,8 @@ class MRK(threading.Thread):
 
     def run(self):
         outlet, info = make_outlet()
-        print(info.as_xml())
+        # print(info.as_xml())
+        print(f"MRK {info.name()} started")
         self.is_running.set()
         while self.is_running.is_set():
             payload = get_from_queue(self.queue)
@@ -100,7 +101,7 @@ class MRK(threading.Thread):
             outlet.push_sample([str(payload.msg)], payload.tstamp)
             latency = 1000 * (payload.tstamp - local_clock())
             print(
-                f"{datetime.datetime.now()}: Pushed {payload.msg} from {payload.tstamp} delayed by {latency:1.2f}ms"
+                f"MRK:PUSH {payload.msg} from {payload.tstamp:.5f} delayed by {latency:1.2f}ms"
             )
 
         print("Shutting MRK down")

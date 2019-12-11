@@ -63,11 +63,12 @@ class EXT(threading.Thread):
         listener.bind((self.host, self.port))
         listener.listen(1)  # one  unaccepted client is allowed
         self.is_running.set()
+        print(f"EXT {self.host}:{self.port} started")
         while self.is_running.is_set():
             try:
                 client, address = listener.accept()
                 payload = read_msg(client)
-                print(f"Received {payload} from {address}")
+                print(f"EXT:RECV {payload}")
                 if not payload:
                     continue
                 put_in_queue(payload, self.queue)
@@ -107,7 +108,7 @@ class Client:
         "encode message into ascii and send all bytes"
         msg = encode_payload(payload)
         if self.verbose:
-            print(f"Sending {payload.fmt}:{payload.msg} at {payload.tstamp}")
+            print(f"PUSH: {payload}")
         self.interface.sendall(msg)
 
     def close(self):
@@ -126,7 +127,7 @@ def push_payload(
     except (ConnectionRefusedError, ConnectionResetError) as e:
         if verbose:  # pragma no cover
             print(e)
-            print(f"Markerserver at {host}:{port} is not available")
+            print(f"Localite EXT at {host}:{port} is not available")
         return False
 
 
