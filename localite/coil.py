@@ -33,7 +33,7 @@ class Coil:
 
     def trigger(self):
         "trigger a single pulse"
-        self.push('{"single_pulse": "coil_' + self.id + '"}')
+        self.push('{"single_pulse": "COIL_' + self.id + '"}')
 
     def request(self, msg: str) -> str:
         """receive an answer from localite 

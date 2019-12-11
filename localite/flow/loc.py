@@ -115,19 +115,19 @@ class localiteClient:
         self.host = host
         self.port = port
 
-    def connect(self):
+    def connect(self) -> None:
         "connect wth the remote server"
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
         self.socket.settimeout(None)
 
-    def close(self):
+    def close(self) -> None:
         "closes the connection"
         self.socket.shutdown(socket.SHUT_WR)
         self.socket.close()
         del self.socket
 
-    def write(self, msg: str):
+    def write(self, msg: str) -> None:
         self.socket.sendall(msg.encode("ascii"))
         return self
 
@@ -138,61 +138,24 @@ class localiteClient:
             try:
                 prt = self.socket.recv(1)
                 bmsg += prt
-                msg = json.loads(bmsg.decode("ascii"))
-                return msg
+                dec = bmsg.decode("ascii")
+                return json.dumps(json.loads(dec))
             except json.JSONDecodeError as e:  # pragma no cover
                 pass
             except Exception as e:  # pragma no cover
-                print("LCL:READ:", e)
+                print("LCL:EXC:", e)
                 return None
 
-    def listen(self):
+    def listen(self) -> Union[None, str]:
         self.connect()
         msg = self.read()
         self.close()
         return msg
 
-    def send(self, msg: str):
+    def send(self, msg: str) -> None:
         self.connect()
         self.write(msg)
         self.close()
-
-    def request(self, msg: str = '{"get":"coil_0_amplitude"}'):
-        self.connect()
-        self.write(msg)
-        key = val = ""
-        expected = json.loads(msg)["get"]
-        while key != expected:
-            answer = self.read()
-            key = list(answer.keys())[0]
-            val = answer[key]
-            val = None if val == "NONE" else val
-            print("LCL:RECV", key, val)
-        self.close()
-        return json.dumps({key: val})
-
-
-def forward(client: localiteClient, payload: Payload) -> Union[str, None]:
-    """forward a localite payload to the localite PC
-
-    returns
-    -------
-    answer: Union[str, None]
-        if the payload was a request, the response from the localite PC
-        otherwise, None
-    """
-    if not is_valid(payload):
-        print("LOC:INVALID", payload)
-        return
-    dec = json.loads(payload.msg)
-    if "get" in dec.keys():
-        answer = client.request(payload.msg)
-        print("LOC:REQU", payload.msg)
-    else:
-        client.send(payload.msg)
-        answer = None
-        print("LOC:SENT", payload.msg)
-    return answer
 
 
 def listen_and_queue(
@@ -202,7 +165,7 @@ def listen_and_queue(
     """
     msg = client.listen()
     if msg in ignore or None:
-        return
+        return None
     else:
         print("LOC:MSG", msg)
         pl = Payload("mrk", msg, local_clock())
@@ -239,16 +202,16 @@ class LOC(threading.Thread):
                 payload = get_from_queue(self.inbox)
                 if payload is None:
                     listen_and_queue(client, ignore=self.ignore, queue=self.outbox)
-                elif payload.fmt == "cmd":
+                else:
+                    print("LOC:RECV", payload)
+                if payload.fmt == "cmd":
                     if payload.msg == "poison-pill":
                         self.is_running.clear()
                         break
+                    else:
+                        print("LOC:INVALID", payload)
                 elif payload.fmt == "loc":
-                    answer = forward(client, payload)
-                    if answer is not None:
-                        print("LOC:RECV:", answer)
-                        pl = Payload("mrk", answer, local_clock())
-                        put_in_queue(pl, self.outbox)
+                    client.send(payload.msg)
             except Exception as e:  # pragma no cover
                 if self.is_running.set():
                     print("LOC:EXC", e)

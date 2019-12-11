@@ -38,7 +38,7 @@ def test_cli(mock):
     p = start(loc_host="127.0.0.1")
     time.sleep(1)
     o, e = Popen(["localite-flow", "--kill"], stdout=PIPE).communicate()
-    assert b"PUSH: cmd:poison-pill @" in o
+    assert b"poison-pill" in o
 
     o, e = p.communicate()
     time.sleep(1)

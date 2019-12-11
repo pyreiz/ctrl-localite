@@ -1,8 +1,7 @@
 from typing import NewType, Dict, Union, Tuple
-from dataclasses import dataclass
 from queue import Queue
 import json
-
+from pylsl import local_clock
 
 TimeStamp = Union[
     int, None
@@ -12,14 +11,17 @@ Message = (
 )
 
 
-@dataclass
 class Payload:
-    fmt: str = ""
-    msg: str = ""
-    tstamp: TimeStamp = None
+    def __init__(self, fmt: str = "", msg: str = "", tstamp: TimeStamp = None):
+        self.fmt = fmt
+        self.msg = msg
+        self.tstamp = tstamp or local_clock()
 
     def __str__(self):
-        return f"{self.fmt}:{self.msg} @ {self.tstamp:.5f}"
+        return str(self.fmt) + " " + str(self.msg) + " @ " + f"{self.tstamp:.5f}"
+
+    def __repr__(self):
+        return f"Payload({self.fmt}, {self.msg}, {self.tstamp:.5f}"
 
 
 def has_poison(payload: Payload) -> bool:
