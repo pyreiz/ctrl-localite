@@ -172,6 +172,43 @@ class localiteClient:
         return json.dumps({key: val})
 
 
+def forward(client: localiteClient, payload: Payload) -> Union[str, None]:
+    """forward a localite payload to the localite PC
+
+    returns
+    -------
+    answer: Union[str, None]
+        if the payload was a request, the response from the localite PC
+        otherwise, None
+    """
+    if not is_valid(payload):
+        print("LOC:INVALID", payload)
+        return
+    dec = json.loads(payload.msg)
+    if "get" in dec.keys():
+        answer = client.request(payload.msg)
+        print("LOC:REQU", payload.msg)
+    else:
+        client.send(payload.msg)
+        answer = None
+        print("LOC:SENT", payload.msg)
+    return answer
+
+
+def listen_and_queue(
+    client: localiteClient, ignore: List[Dict[str, str]], queue: Queue
+) -> None:
+    """listen to the localice stream and forward to queue
+    """
+    msg = client.listen()
+    if msg in ignore or None:
+        return
+    else:
+        print("LOC:MSG", msg)
+        pl = Payload("mrk", msg, local_clock())
+        put_in_queue(pl, queue)
+
+
 class LOC(threading.Thread):
     def __init__(
         self,
@@ -194,44 +231,29 @@ class LOC(threading.Thread):
             pass
 
     def run(self):
-        failed = False
-        self.is_running.set()
         client = localiteClient(host=self.host, port=self.port)
+        self.is_running.set()
         print(f"LOC {self.host}:{self.port} started")
         while self.is_running.is_set():
             try:
                 payload = get_from_queue(self.inbox)
                 if payload is None:
-                    msg = client.listen()
-                    if msg in self.ignore or None:
-                        continue
-                    else:
-                        print("LOC:MSG", msg)
-                        pl = Payload("mrk", msg, local_clock())
-                        put_in_queue(pl, self.outbox)
-
+                    listen_and_queue(client, ignore=self.ignore, queue=self.outbox)
                 elif payload.fmt == "cmd":
                     if payload.msg == "poison-pill":
                         self.is_running.clear()
                         break
                 elif payload.fmt == "loc":
-                    if not is_valid(payload):
-                        print("LOC:INVALID", payload)
-                    answer = None
-                    dec = json.loads(payload.msg)
-                    if "get" in dec.keys():
-                        answer = client.request(payload.msg)
-                        print("LOC:REQU", payload.msg)
-                    else:
-                        client.send(payload.msg)
-                        print("LOC:SENT", payload.msg)
+                    answer = forward(client, payload)
                     if answer is not None:
                         print("LOC:RECV:", answer)
                         pl = Payload("mrk", answer, local_clock())
                         put_in_queue(pl, self.outbox)
             except Exception as e:  # pragma no cover
-                if not failed:
+                if self.is_running.set():
                     print("LOC:EXC", e)
-                    failed = True
-                pass
+                    pl = Payload("mrk", "LOC:EXC " + str(e), local_clock())
+                    put_in_queue(pl, self.outbox)
+                    self.is_running.clear()
+
         print("Shutting LOC down")

@@ -74,6 +74,15 @@ def test_invalid(loc, mock, capsys):
     assert "LOC:INVALID" in pipe.out
 
 
+def test_trigger(loc, mock, capsys):
+    pl = Payload(fmt="loc", msg='{"single_pulse":"COIL_0"}')
+    put_in_queue(pl, loc.inbox)
+    time.sleep(1)
+    pipe = capsys.readouterr()
+    assert "LOC:SENT" in pipe.out
+    assert '{"single_pulse":"COIL_0"}' in pipe.out
+
+
 def test_valid():
     def pl(msg: str) -> Payload:
         return Payload(fmt="loc", msg=msg)
