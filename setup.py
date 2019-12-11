@@ -10,6 +10,7 @@ setup(
     version="0.3.0",
     description="Stream from and control TMS using Localite",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Robert Guggenberger",
     author_email="robert.guggenberger@uni-tuebingen.de",
     url="https://github.com/pyreiz/ctrl-localite",

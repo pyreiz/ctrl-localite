@@ -25,7 +25,7 @@ def mock():
 def test_setup_tear_down(mock, capsys):
     start_threaded(loc_host="127.0.0.1")
     kill()
-    time.sleep(0.5)
+    time.sleep(1)
     pipe = capsys.readouterr()
     assert "Shutting EXT down" in pipe.out
     assert "Shutting CTRL down" in pipe.out
@@ -33,16 +33,15 @@ def test_setup_tear_down(mock, capsys):
     assert "Shutting LOC down" in pipe.out
 
 
-def test_cli(mock, capsys):
+def test_cli(mock):
     p = start(loc_host="127.0.0.1")
-    time.sleep(0.5)
+    time.sleep(1)
     o, e = Popen(["localite-flow", "--kill"], stdout=PIPE).communicate()
     assert b"PUSH: cmd:poison-pill @" in o
 
     o, e = p.communicate()
-    time.sleep(0.5)
-    pipe = capsys.readouterr()
-    assert "[Errno 111] Connection refused" not in pipe.out
+    time.sleep(1)
+    assert b"[Errno 111] Connection refused" not in o
 
 
 def test_cli_help():
