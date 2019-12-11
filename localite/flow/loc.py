@@ -208,7 +208,7 @@ class LOC(threading.Thread):
                     if payload.msg == "poison-pill":
                         self.is_running.clear()
                         break
-                    else:
+                    else:  # pragma no cover
                         print("LOC:INVALID", payload)
                 elif payload.fmt == "loc":
                     client.send(payload.msg)

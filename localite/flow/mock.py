@@ -48,30 +48,37 @@ def create_response(msg: Dict[str, Union[str, int]]) -> Dict:
     key = list(msg.keys())[0]
     val = msg[key]
     if key == "current_instrument":  # set current instrument
-        return {val: "COIL_0"}
+        if val in ["NONE", "POINTER", "COIL_0", "COIL_1"]:
+            return msg
+        else:
+            return {"error": msg}
     if key in [
         "pointer_target_index",
         "coil_0_target_index",
         "coil_1_target_index",
     ]:  # set target index
-        return {val: 1}
+        if type(val) == int and val > 0:
+            return msg
+        else:
+            return {"error": msg}
     elif key == "single_pulse":  # trigger
         if val in ["COIL_0", "COIL_1"]:
             return {val.lower() + "_didt": 11}
         else:
             return {"error", msg}
     elif key in ["coil_0_amplitude", "coil_1_amplitude"]:  # set amplitude
-        if val > 0 and val < 100:
+        if val >= 0 and val <= 100:
             return msg
         else:
-            return {"error", msg}
+            return {"error", msg}  # suggestion for localite
     elif key in ["coil_0_response", "coil_1_response"]:  # set response
         if val["mepmaxtime"] < 0 or val["mepmaxtime"] > 100000:
             return {"error", msg}
         for subkey in ["mepamplitude", "mepmin", "mepmax"]:
             if val[subkey] < -51200 or val[subkey] > 51200:
-                return False
-            return True
+                return {"error": msg}  # suggestion for localite
+        return msg
+
     elif key == "get":
         valid = {
             "coil_0_amplitude": 1,

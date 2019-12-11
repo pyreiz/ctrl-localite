@@ -7,6 +7,14 @@ from localite.flow.payload import (
 )
 
 
+def test_payload_repr():
+    self = Payload("mrk", "test")
+    other = eval(repr(self))
+    assert self == other
+    assert self != "test"
+    other = Payload("mrk", "other")
+    assert self != other
+
 def test_has_poison():
     payload = Payload("cmd", "poison-pill", 12345)
     assert has_poison(payload)

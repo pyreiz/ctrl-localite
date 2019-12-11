@@ -21,8 +21,13 @@ class Payload:
         return str(self.fmt) + " " + str(self.msg) + " @ " + f"{self.tstamp:.5f}"
 
     def __repr__(self):
-        return f"Payload({self.fmt}, {self.msg}, {self.tstamp:.5f}"
+        return f"Payload('{self.fmt}', '{self.msg}', {self.tstamp})"
 
+    def __eq__(self, other):
+        if isinstance(other, Payload):
+            return all((self.fmt == other.fmt, self.msg == other.msg, self.tstamp == other.tstamp))
+        else:
+            return False
 
 def has_poison(payload: Payload) -> bool:
     "return whether there is a poison-pill in the Payload"

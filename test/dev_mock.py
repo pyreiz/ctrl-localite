@@ -45,7 +45,7 @@ while loc.outbox.unfinished_tasks:
     recv.append(pl)
     if "coil_0_amplitude" in pl.msg:
         break
-print("Found", pl)
+print(pl)
 # %%
     # shut down in less than 7s
 mock.kill()

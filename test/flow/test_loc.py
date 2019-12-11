@@ -1,10 +1,10 @@
 # from .mock_localite import Mock
 from pytest import fixture
 from localite.flow.mock import Mock
-from localite.flow.loc import LOC, localiteClient, json, is_valid
+from localite.flow.loc import LOC, is_valid
 from localite.flow.payload import Queue, Payload, put_in_queue, get_from_queue
 import time
-
+import json
 
 host = "127.0.0.1"
 port = 6666
@@ -51,44 +51,83 @@ def test_loc_running(loc):
     assert loc.is_running.is_set()
 
 
-def test_get(loc, mock):
-    payload = Payload("loc", '{"get": "coil_0_amplitude"}', 12345)
-    put_in_queue(payload, loc.inbox)
-    time.sleep(0.5)
-    recv = []
-    while loc.outbox.unfinished_tasks:
+def test_listen(loc, mock):
+    t0 = time.time()
+    while t0 - time.time() < 5:
         pl = get_from_queue(loc.outbox)
-        recv.append(pl)
-        if "coil_0_amplitude" in pl.msg:
+        if pl is not None:
             break
+    assert pl.fmt == "mrk"
+
+
+def test_get(loc, mock):
+    msg = json.dumps(
+        {
+            "coil_0_response": {
+                "mepmaxtime": 18,
+                "mepamplitude": 50,
+                "mepmin": -25,
+                "mepmax": 25,
+            }
+        }
+    )
+    payload = Payload("loc", msg, 12345)
+    put_in_queue(payload, loc.inbox)
+    recv = []
+    t0 = time.time()
+    while t0 - time.time() < 5:
+        pl = get_from_queue(loc.outbox)
+        if pl is not None:
+            recv.append(pl)
+            if "coil_0_response" in pl.msg:
+                break
 
     assert pl.fmt == "mrk"
-    assert pl.msg == '{"coil_0_amplitude": 1}'
+    assert "coil_0_response" in pl.msg
+
+
+def test_set_response(loc, mock):
+    "coil_0_response"
+    payload = Payload("loc", '{"get": "coil_0_amplitude"}', 12345)
+    put_in_queue(payload, loc.inbox)
+    recv = []
+    t0 = time.time()
+    while t0 - time.time() < 5:
+        pl = get_from_queue(loc.outbox)
+        if pl is not None:
+            recv.append(pl)
+            if "coil_0_amplitude" in pl.msg:
+                break
+    assert "coil_0_amplitude" in pl.msg
 
 
 def test_invalid(loc, mock):
     pl = Payload("loc", '{"garbage": "garbage"}', 12345)
     put_in_queue(pl, loc.inbox)
-    time.sleep(1)
     recv = []
-    while loc.outbox.unfinished_tasks:
+    t0 = time.time()
+    while t0 - time.time() < 5:
         pl = get_from_queue(loc.outbox)
-        recv.append(pl)
-        if "garbage" in pl.msg:
-            break
+        if pl is not None:
+            recv.append(pl)
+            if "garbage" in pl.msg:
+                break
     assert "error" in pl.msg
+
 
 def test_trigger(loc, mock):
     pl = Payload("loc", '{"single_pulse":"COIL_0"}', 12345)
     put_in_queue(pl, loc.inbox)
-    time.sleep(1)
     recv = []
-    while loc.outbox.unfinished_tasks:
+    t0 = time.time()
+    while t0 - time.time() < 5:
         pl = get_from_queue(loc.outbox)
-        recv.append(pl)
-        if "coil_0_didt" in pl.msg:
-            break
-    assert 'coil_0_didt' in pl.msg
+        if pl is not None:
+            recv.append(pl)
+            if "coil_0_didt" in pl.msg:
+                break
+
+    assert "coil_0_didt" in pl.msg
 
 
 def test_valid():
