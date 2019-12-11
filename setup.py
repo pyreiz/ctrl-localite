@@ -7,7 +7,7 @@ with (Path(__file__).parent / "readme.md").open("r") as f:
 
 setup(
     name="localite",
-    version="0.1.0",
+    version="0.3.0",
     description="Stream from and control TMS using Localite",
     long_description=long_description,
     author="Robert Guggenberger",
@@ -18,7 +18,7 @@ setup(
     packages=["localite", "localite.flow"],
     entry_points={
         "console_scripts": [
-            "ctrl-localite=localite.cli:ctrl",
+            "localite-flow=localite.cli:flow",
             "localite-mock=localite.mock:main",
         ],
     },

@@ -129,33 +129,3 @@ class Mock(threading.Thread):
         msg = {"cmd": "poison-pill"}
         msg = json.dumps(msg)
         client.send(msg)
-
-
-# if __name__ == "__main__":
-#     host = "127.0.0.1"
-#     port = 6666
-#     mock = Mock(host=host, port=port)
-#     mock.start()
-#     mock.await_running()
-# client = localiteClient("134.2.117.146", port)
-
-# inbox = Queue()
-# outbox = Queue()
-# loc = LOC(host=host, port=port, inbox=inbox, outbox=outbox)
-# loc.start()
-# loc.await_running()
-
-# def listen(host, port):
-
-#     while True:
-#         try:
-#             item = get_from_queue(loc.outbox)
-#             if item is None:
-#                 time.sleep(0.001)
-#             else:
-#                 print(item)
-#         except Exception as e:
-#             print(e)
-
-# t = threading.Thread(target=listen, args=(host, port,))
-# t.start()

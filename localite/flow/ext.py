@@ -125,7 +125,7 @@ def push_payload(
         Client(host=host, port=port, verbose=verbose).push(payload)
         return True
     except (ConnectionRefusedError, ConnectionResetError) as e:
-        if verbose:  # pragma no cover
+        if verbose and payload.msg != "ping":  # pragma no cover
             print(e)
             print(f"Localite EXT at {host}:{port} is not available")
         return False
@@ -146,13 +146,13 @@ def push(
         Client(host=host, port=port, verbose=verbose).push(payload)
         return True
     except (ConnectionRefusedError, ConnectionResetError) as e:
-        if verbose:  # pragma no cover
+        if verbose and msg != "ping":  # pragma no cover
             print(e)
             print(f"Localite EXT at {host}:{port} is not available")
         return False
 
 
-def available(port: int = 6667, host: str = "127.0.0.1", verbose=True) -> bool:
+def available(port: int = 6667, host: str = "127.0.0.1") -> bool:
     """test whether EXT is available at port
 
     args
@@ -173,7 +173,7 @@ def available(port: int = 6667, host: str = "127.0.0.1", verbose=True) -> bool:
     return push_payload(Payload("cmd", "ping", local_clock()))
 
 
-def kill(port: int = 6667, host: str = "127.0.0.1", verbose=True) -> bool:
+def kill(port: int = 6667, host: str = "127.0.0.1") -> bool:
     """kill the  markerserver is already  at that port
 
     args

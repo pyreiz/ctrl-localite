@@ -194,6 +194,7 @@ class LOC(threading.Thread):
             pass
 
     def run(self):
+        failed = False
         self.is_running.set()
         client = localiteClient(host=self.host, port=self.port)
         print(f"LOC {self.host}:{self.port} started")
@@ -228,7 +229,9 @@ class LOC(threading.Thread):
                         print("LOC:RECV:", answer)
                         pl = Payload("mrk", answer, local_clock())
                         put_in_queue(pl, self.outbox)
-            except Exception as e:
-                print("LOC:EXC", e)
-                break
+            except Exception as e:  # pragma no cover
+                if not failed:
+                    print("LOC:EXC", e)
+                    failed = True
+                pass
         print("Shutting LOC down")

@@ -4,8 +4,8 @@ from localite.flow.mrk import MRK
 from localite.flow.ctrl import CTRL
 from localite.flow.payload import Queue
 from localite.flow.ext import push
-from functools import partial
-import configparser
+from subprocess import Popen, PIPE
+import time
 from typing import Tuple
 
 
@@ -44,10 +44,21 @@ def kill(ext: Tuple[str, int] = ("127.0.0.1", 6667)):
     """kill a localite-flow
     args
     ----
-    ext: Tuple[str, int] = ("127.0.0.1", 6666)
+    ext: Tuple[str, int] = ("127.0.0.1", 6667)
         the host:port where the localite-flow server was setup    
 
     
     """
     push("cmd", "poison-pill", host=ext[0], port=ext[1])
 
+
+def start(loc_host: str = ""):
+    from localite.flow.ext import available
+
+    p = Popen(["localite-flow", "--host", loc_host], stderr=PIPE, stdout=PIPE)
+    print("[", end="")
+    while not available():
+        print(".", end="")
+        time.sleep(0.5)
+    print("]")
+    return p
