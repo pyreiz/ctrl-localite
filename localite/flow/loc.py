@@ -119,7 +119,7 @@ class localiteClient:
         "connect wth the remote server"
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        self.socket.settimeout(0.1)
+        self.socket.settimeout(None)
 
     def close(self):
         "closes the connection"
@@ -200,11 +200,9 @@ class LOC(threading.Thread):
         while self.is_running.is_set():
             try:
                 payload = get_from_queue(self.inbox)
-                print(f"LOC:RECV:{payload}")
                 if payload is None:
                     msg = client.listen()
-                    print("LOC:MSG", msg)
-                    if msg in self.ignore:
+                    if msg in self.ignore or None:
                         continue
                     else:
                         print("LOC:MSG", msg)

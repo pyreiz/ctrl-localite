@@ -7,6 +7,7 @@ from typing import List
 from pylsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
 from localite.flow.loc import localiteClient, ignored_localite_messages
+from itertools import repeat
 
 
 class Mock(threading.Thread):
@@ -43,20 +44,22 @@ class Mock(threading.Thread):
 
     @staticmethod
     def append(outqueue: List[dict], is_running: threading.Event):
-        cnt = 0
         from queue import Full
 
-        modulo = len(ignored_localite_messages)
+        def Messages():
+            continual = ignored_localite_messages + [{"coil_0_position": "None"}]
+            while True:
+                try:
+                    yield from continual
+                except Exception:
+                    continual = ignored_localite_messages + [
+                        {"coil_0_position": "None"}
+                    ]
+
+        message = Messages()
         while is_running.is_set():
             time.sleep(1)
-
-            cnt += 1
-            if cnt > modulo + 1:
-                cnt = 0
-            elif cnt > modulo:
-                msg = {"coil_0_position": "None"}
-            else:
-                msg = ignored_localite_messages[cnt]
+            msg = next(message)
             try:
                 outqueue.put_nowait(msg)
             except Full:

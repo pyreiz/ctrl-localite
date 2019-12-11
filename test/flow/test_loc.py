@@ -71,7 +71,7 @@ def test_invalid(loc, mock, capsys):
     put_in_queue(pl, loc.inbox)
     time.sleep(0.5)
     pipe = capsys.readouterr()
-    assert "LOC:INVALID Payload" in pipe.out
+    assert "LOC:INVALID" in pipe.out
 
 
 def test_valid():

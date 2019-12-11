@@ -20,7 +20,7 @@ def encode_payload(payload: Payload) -> bytes:
 def decode_payload(buffer: bytes) -> Union[Payload, None]:
     try:
         fmt, msg, tstamp = json.loads(buffer.decode("ascii"))
-        payload = Payload(fmt.lower(), msg.lower(), tstamp)
+        payload = Payload(fmt, msg, tstamp)
         if payload.fmt in ("cmd", "mrk", "loc"):
             return payload
         else:
