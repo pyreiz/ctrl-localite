@@ -164,7 +164,7 @@ def listen_and_queue(
     """listen to the localice stream and forward to queue
     """
     msg = client.listen()
-    if msg in ignore or None:
+    if json.loads(msg) in ignore or None:
         return None
     else:
         print("LOC:MSG", msg)
