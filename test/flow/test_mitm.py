@@ -1,4 +1,5 @@
-from .mock_localite import Mock
+# from .mock_localite import Mock
+from localite.flow.mock import Mock
 from localite.flow.mitm import start_threaded, start, kill
 import time
 from pytest import fixture

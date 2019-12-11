@@ -20,7 +20,7 @@ setup(
     entry_points={
         "console_scripts": [
             "localite-flow=localite.cli:flow",
-            "localite-mock=localite.mock:main",
+            "localite-mock=localite.cli:mock",
         ],
     },
     classifiers=[

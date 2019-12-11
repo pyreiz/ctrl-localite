@@ -10,6 +10,37 @@ from localite.flow.loc import localiteClient, ignored_localite_messages
 from itertools import repeat
 
 
+def append(outqueue: Queue, is_running: threading.Event, imi: float = 1):
+    from queue import Full
+
+    def Messages():
+        continual = ignored_localite_messages + [{"coil_0_position": "None"}]
+        while True:
+            yield from continual
+
+    message = Messages()
+    while not is_running.is_set():
+        time.sleep(0.1)
+    print("Starting MOCK-MSG-QUEUE")
+    while is_running.is_set():
+        time.sleep(imi)
+        msg = next(message)
+        try:
+            outqueue.put_nowait(msg)
+        except Full:
+            outqueue.get()
+            outqueue.task_done()
+            outqueue.put(msg)
+        print("MOCK:APP", outqueue.unfinished_tasks)
+
+
+def kill(host: str = "127.0.0.1", port=6666):
+    client = localiteClient(host, port)
+    msg = {"cmd": "poison-pill"}
+    msg = json.dumps(msg)
+    client.send(msg)
+
+
 class Mock(threading.Thread):
     def __init__(self, host: str = "127.0.0.1", port: int = 6666):
         threading.Thread.__init__(self)
@@ -40,33 +71,6 @@ class Mock(threading.Thread):
             except Exception as e:  # pragma no cover
                 print("MOCK:READ_MSG:", e)
                 return None
-        return None
-
-    @staticmethod
-    def append(outqueue: List[dict], is_running: threading.Event):
-        from queue import Full
-
-        def Messages():
-            continual = ignored_localite_messages + [{"coil_0_position": "None"}]
-            while True:
-                try:
-                    yield from continual
-                except Exception:
-                    continual = ignored_localite_messages + [
-                        {"coil_0_position": "None"}
-                    ]
-
-        message = Messages()
-        while is_running.is_set():
-            time.sleep(1)
-            msg = next(message)
-            try:
-                outqueue.put_nowait(msg)
-            except Full:
-                outqueue.get()
-                outqueue.task_done()
-                outqueue.put(msg)
-            print("MOCK:APP", outqueue.unfinished_tasks)
 
     def run(self):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -76,11 +80,9 @@ class Mock(threading.Thread):
         listener.listen(1)  # one  unaccepted client is allowed
         outqueue = Queue(maxsize=10)
         outqueue.put({"coil_0_position": "None"})
-        self.is_running.set()
-        appender = threading.Thread(
-            target=self.append, args=(outqueue, self.is_running,)
-        )
+        appender = threading.Thread(target=append, args=(outqueue, self.is_running,))
         appender.start()
+        self.is_running.set()
         print("Starting MOCK")
         while self.is_running.is_set():
             try:
@@ -116,7 +118,7 @@ class Mock(threading.Thread):
                 ConnectionAbortedError,
                 ConnectionResetError,
                 ConnectionRefusedError,
-            ):
+            ):  # pragma no cover
                 client = None
             except Exception as e:  # pragma no cover
                 print("MOCK:RUN", str(e))
@@ -125,7 +127,4 @@ class Mock(threading.Thread):
         print("Shutting MOCK down")
 
     def kill(self):
-        client = localiteClient(self.host, self.port)
-        msg = {"cmd": "poison-pill"}
-        msg = json.dumps(msg)
-        client.send(msg)
+        kill(self.host, self.port)

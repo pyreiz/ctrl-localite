@@ -1,5 +1,6 @@
-from .mock_localite import Mock
+# from .mock_localite import Mock
 from pytest import fixture
+from localite.flow.mock import Mock
 from localite.flow.loc import LOC, localiteClient, json, is_valid
 from localite.flow.payload import Queue, Payload, put_in_queue, get_from_queue
 import time
