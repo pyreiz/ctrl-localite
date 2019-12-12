@@ -1,12 +1,9 @@
 import socket
 import json
-import pylsl
 import threading
-import time
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Tuple
 from pylsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
-from itertools import count
 
 constant_messages = [
     {"pointer_status": "BLOCKED"},
@@ -140,7 +137,7 @@ class localiteClient:
                 bmsg += prt
                 dec = bmsg.decode("ascii")
                 return json.dumps(json.loads(dec))
-            except json.JSONDecodeError as e:  # pragma no cover
+            except json.JSONDecodeError:  # pragma no cover
                 pass
             except Exception as e:  # pragma no cover
                 print("LCL:EXC:", e)
@@ -230,16 +227,15 @@ class LOC(threading.Thread):
         self,
         outbox: Queue,
         inbox: Queue,
-        host: str,
-        port: int = 6666,
+        address: Tuple[str, int] = ("127.0.0.1", 6666),
         ignore: List[Dict[str, str]] = constant_messages,
     ):
         threading.Thread.__init__(self)
         self.inbox = inbox
         self.outbox = outbox
         self.ignore = ignore
-        self.host = host
-        self.port = port
+        self.host = address[0]
+        self.port = address[1]
         self.is_running = threading.Event()
 
     def await_running(self):  # pragma no cover

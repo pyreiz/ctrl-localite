@@ -18,7 +18,7 @@ def flow():
         if args.host == "":
             parser.print_help()
         else:
-            start_threaded(loc_host=args.host, ext=("127.0.0.1", 6667))
+            start_threaded(loc_host=args.host, address=("127.0.0.1", 6667))
 
 
 def mock():
@@ -32,5 +32,5 @@ def mock():
         mock = Mock()
         mock.start()
         mock.await_running()
-        start_threaded(loc_host="127.0.0.1", ext=("127.0.0.1", 6667))
+        start_threaded(loc_host="127.0.0.1", address=("127.0.0.1", 6667))
 

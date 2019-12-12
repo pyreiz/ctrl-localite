@@ -7,18 +7,20 @@ from localite.flow.mrk import Receiver
 from typing import Tuple, Dict, Any, Union
 import json
 
-def pythonize_values(v:str) -> Union[bool, None, str]:
+
+def pythonize_values(v: str) -> Union[bool, None, str]:
     "pythonize a dictionaries values"
-    if v == "TRUE":
+    if v.upper() == "TRUE":
         return True
-    elif v == "FALSE":
+    elif v.upper() == "FALSE":
         return False
-    elif v == "NONE":
+    elif v.upper() == "NONE":
         return None
     else:
         return v
-    
-def pythonize_response(response:Dict[str, Any]) -> Any:
+
+
+def pythonize_response(response: Dict[str, Any]) -> Any:
     "convert the json responses to a python builtin"
     for k, v in response.items():
         pass
@@ -28,9 +30,10 @@ def pythonize_response(response:Dict[str, Any]) -> Any:
         d = dict()
         for _k, _v in v.items():
             d[_k] = pythonize_values(_v)
-        return d            
+        return d
     return v
-    
+
+
 class Coil:
     """Coil is a user-friendly interface to control the TMS and Localite
 
@@ -46,24 +49,23 @@ class Coil:
     def __init__(self, coil: int = 0, address: Tuple[str, int] = ("127.0.0.1", 6667)):
         host, port = address
         self._push_mrk = partial(push, fmt="mrk", host=host, port=port)
-        self._push_loc = partial(push, fmt="loc", host=host, port=port)        
+        self._push_loc = partial(push, fmt="loc", host=host, port=port)
         self.receiver = Receiver(name="localite_marker")
         self.receiver.start()
         self.id = coil
-        
+
     def await_connection(self):
         print("[", end="")
         while not self.connected:
             print(".", end="")
         print("]")
-            
-  
+
     def stream_info(self):
         self.model
         self.mode
         self.waveform
         self.amplitude
-        
+
     def push(self, msg: str):
         self._push_loc(msg=msg)
 
@@ -75,15 +77,15 @@ class Coil:
         "trigger a single pulse"
         self.push('{"single_pulse": "COIL_' + self.id + '"}')
 
-    def request(self, msg:str) -> Any:
+    def request(self, msg: str) -> Any:
         "add the coil id to the message and request a property from localite"
         msg = json.dumps({"get": f"coil_{self.id}_{msg}"})
         return self._request(msg)
-    
+
     def _request(self, msg: str) -> Any:
         "request a ready made property from localite"
         self._push_loc(msg=msg)
-        response, ts = self.receiver.await_response(msg)        
+        response, ts = self.receiver.await_response(msg)
         return pythonize_response(response)
 
     @property
@@ -110,7 +112,7 @@ class Coil:
     @property
     def type(self):
         return self.request("type")
-    
+
     @property
     def temperature(self) -> int:
         return self.request("temperature")
@@ -118,12 +120,13 @@ class Coil:
     @property
     def didt(self) -> Union[int, None]:
         "the di/dt of the last succesfull TMS pulse"
-        response =  self.request("didt")
+        response = self.request("didt")
         # if there was not yet a stimulus, localite returns an error message
         # we skip that and just return 0
         if type(response) is dict and "reason" in response.items():
-            return None   
-            
+            return None
+        else:
+            return response
 
     @property
     def amplitude(self) -> int:
@@ -138,14 +141,14 @@ class Coil:
         return self.request("amplitude")
 
     @property
-    def target_index(self) ->int:
+    def target_index(self) -> int:
         "get the current targets index"
         return self.request("target_index")
 
     @target_index.setter
-    def target_index(self, index: int) ->int:
+    def target_index(self, index: int) -> int:
         "set the index of the next target"
-        msg = json.dumps({f"coil_{self._id}_target_index":  index})
+        msg = json.dumps({f"coil_{self._id}_target_index": index})
         response = self._request(msg)
         if "reason" in response.keys():
             print(response["reason"])
@@ -159,7 +162,7 @@ class Coil:
               "x": 37, "y": 77, "z": 53}
         """
         return self.request("position")
-    
+
     @property
     def position_reached(self) -> bool:
         "whether the target position has been reached or not"
@@ -171,7 +174,7 @@ class Coil:
         return True if self.request("status") == "OK" else False
 
     @property
-    def waveform(self)-> str:
+    def waveform(self) -> str:
         """the waveform currently set in the stimulator
         
         can be e.g. 'Monophasic', 'Biphasic', 'Halfsine', 'Biphasic Burst'
@@ -186,7 +189,7 @@ class Coil:
         """
         typ = self.request("type")
         model = self.request("stimulator_model")["name"]
-        return ' '.join((typ, model))
+        return " ".join((typ, model))
 
     @property
     def mode(self) -> str:
@@ -196,6 +199,7 @@ class Coil:
             
         """
         return self.request("stimulator_mode")["name"]
+
 
 if __name__ == "__main__":
 

@@ -50,7 +50,7 @@ class Receiver(threading.Thread):
         self.is_running = threading.Event()
 
     def clear(self):
-        self.buffer.get_as_list()
+        [i for i in self.buffer.get_as_list()]
 
     def await_response(self, msg: str):
         key = expectation(msg)

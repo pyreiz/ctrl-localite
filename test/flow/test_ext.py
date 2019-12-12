@@ -40,4 +40,3 @@ def test_push(ext, capsys):
     time.sleep(0.1)
     out, err = capsys.readouterr()
     assert "is no valid Payload" in out
-

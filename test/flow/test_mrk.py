@@ -30,25 +30,26 @@ def test_receiver():
     r.start()
     time.sleep(5)
 
+    # buffer should contain everything which was sent
     inp = ["1", "2", "3", "4", "5"]
     for i in inp:
         outlet.push_sample([i])
     time.sleep(0.1)
-    # buffer should contain everything which was sent
     out = [i[0][0] for i in r.buffer.get_as_list()]
     assert inp == out
+
     # buffer should be empty now
     out = [i[0][0] for i in r.buffer.get_as_list()]
     assert out == []
+
     # buffer should be cleared upon call
     inp = ["1", "2", "3", "4", "5"]
     for i in inp:
         outlet.push_sample([i])
     time.sleep(0.1)
-    # buffer should contain everything which was sent
-    buffer.clear()
+    r.clear()
     out = [i[0][0] for i in r.buffer.get_as_list()]
-    assert inp == []
+    assert out == []
     # receiver should stop within 5 seconds
     r.stop()
     t0 = time.time()

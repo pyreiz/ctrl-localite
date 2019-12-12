@@ -10,7 +10,7 @@ from typing import Tuple
 
 
 def start_threaded(
-    loc_host: str, loc_port: int = 6666, ext: Tuple[str, int] = ("127.0.0.1", 6667)
+    loc_host: str, loc_port: int = 6666, address: Tuple[str, int] = ("127.0.0.1", 6667)
 ):
     """starts the whole flow-pipeline as threads within the local process
 
@@ -26,9 +26,9 @@ def start_threaded(
     queue = Queue()
     locbox = Queue()
     mrkbox = Queue()
-    ext = EXT(host=ext[0], port=ext[1], queue=queue)
+    ext = EXT(host=address[0], port=address[1], queue=queue)
     ctrl = CTRL(queue=queue, loc=locbox, mrk=mrkbox)
-    loc = LOC(outbox=queue, inbox=locbox, host=loc_host, port=loc_port)
+    loc = LOC(outbox=queue, inbox=locbox, address= (loc_host, loc_port))
     mrk = MRK(mrk=mrkbox)
     mrk.start()
     loc.start()

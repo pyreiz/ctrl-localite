@@ -12,7 +12,7 @@ if "LOCALITE_HOST" in os.environ:
         inbox = Queue()
         outbox = Queue()
         loc = LOC(
-            host=os.environ["LOCALITE_HOST"], port=6666, inbox=inbox, outbox=outbox
+            address=(os.environ["LOCALITE_HOST"], 6666), inbox=inbox, outbox=outbox
         )
         loc.start()
         loc.await_running()

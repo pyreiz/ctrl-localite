@@ -29,7 +29,7 @@ def mock():
 def loc(mock):
     inbox = Queue()
     outbox = Queue()
-    loc = LOC(host=host, port=port, inbox=inbox, outbox=outbox)
+    loc = LOC(address=(host, port), inbox=inbox, outbox=outbox)
     loc.start()
     loc.await_running()
     yield loc
@@ -49,15 +49,6 @@ def test_mock_running(mock):
 
 def test_loc_running(loc):
     assert loc.is_running.is_set()
-
-
-def test_listen(loc, mock):
-    t0 = time.time()
-    while t0 - time.time() < 5:
-        pl = get_from_queue(loc.outbox)
-        if pl is not None:
-            break
-    assert pl.fmt == "mrk"
 
 
 def test_get(loc, mock):

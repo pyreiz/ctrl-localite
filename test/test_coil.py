@@ -19,19 +19,19 @@ def coil():
     coil.receiver.stop()
 
 
-def test_get_coil_temperature(mock, coil):
+def test_coil_raw_request(mock, coil):
 
     msg = '{"get":"coil_0_temperature"}'
     coil._push_loc(msg=msg)
     assert coil.receiver.await_response(msg)[0] == {"coil_0_temperature": 35}
 
-    msg = '{"single_pulse":"COIL_0"}'
-    coil._push_loc(msg=msg)
-    assert coil.receiver.await_response(msg)[0] == {"coil_0_didt": 11}
 
-    msg = '{"coil_0_amplitude": 10}'
-    coil._push_loc(msg=msg)
-    assert coil.receiver.await_response(msg)[0] == {"coil_0_amplitude": 10}
+def test_coil_properties(mock, coil):
+    assert coil.target_index == 1
+    assert coil.temperature == 35
+    assert coil.didt == 99
+
+    coil.trigger()
 
 
 def test_pythonize():
