@@ -22,13 +22,15 @@ def flow():
 
 
 def mock():
-    parser = argparse.ArgumentParser("localite-flow")
+    parser = argparse.ArgumentParser("localite-mock")
     parser.add_argument("--kill", action="store_true")
     args, unknown = parser.parse_known_args()
     if args.kill:
         kill_mock()
+        kill_flow(("127.0.0.1", 6667))
     else:
         mock = Mock()
         mock.start()
         mock.await_running()
+        start_threaded(loc_host="127.0.0.1", ext=("127.0.0.1", 6667))
 
