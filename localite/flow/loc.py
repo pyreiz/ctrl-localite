@@ -8,7 +8,7 @@ from pylsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
 from itertools import count
 
-ignored_localite_messages = [
+constant_messages = [
     {"pointer_status": "BLOCKED"},
     {"reference_status": "BLOCKED"},
     {"coil_1_status": "BLOCKED"},
@@ -182,7 +182,7 @@ class LastMessage(Payload):
 
     def update(self, payload: Payload):
         "update the expectation"
-        if payload.fmt != "loc":
+        if payload.fmt != "loc":  # pragma no cover
             raise ValueError("Must be a valid loc-command")
         self.fmt = payload.fmt
         self.msg = payload.msg
@@ -192,7 +192,7 @@ class LastMessage(Payload):
         # FIXME
         # https://github.com/pyreiz/ctrl-localite/issues/3
         # current_instrument responds only when it actually switches
-        if key == "current_instrument":
+        if key == "current_instrument":  # pragma no cover
             print("LOC:HACK", key)
             self.expect = "current_instrument"
             self.msg = '{"get":"current_instrument"}'
@@ -218,9 +218,10 @@ class LastMessage(Payload):
         if response is None:
             self.counter += 1
             return self.counter
-        if self.expect in response.keys():
+        if self.expect in response.keys() or "error" in response.keys():
             self.expect = None
             self.counter = 0
+            self.msg = None
             return 0
 
 
@@ -231,7 +232,7 @@ class LOC(threading.Thread):
         inbox: Queue,
         host: str,
         port: int = 6666,
-        ignore: List[Dict[str, str]] = ignored_localite_messages,
+        ignore: List[Dict[str, str]] = constant_messages,
     ):
         threading.Thread.__init__(self)
         self.inbox = inbox
@@ -256,9 +257,14 @@ class LOC(threading.Thread):
             try:
                 payload = get_from_queue(self.inbox)
                 if payload is None:
-                    response = listen_and_queue(
-                        client, ignore=self.ignore, queue=self.outbox
-                    )
+                    if "status" in lastmessage.msg:
+                        response = listen_and_queue(
+                            client, ignore=[], queue=self.outbox
+                        )
+                    else:
+                        response = listen_and_queue(
+                            client, ignore=self.ignore, queue=self.outbox
+                        )
                     flevel = lastmessage.expects(response)
                     if flevel:
                         print("LOC:FRUST", flevel, response)

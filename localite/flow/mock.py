@@ -6,7 +6,7 @@ import time
 from typing import List, Dict, Union
 from pylsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
-from localite.flow.loc import localiteClient, ignored_localite_messages
+from localite.flow.loc import localiteClient, constant_messages
 from itertools import repeat
 from queue import Empty
 
@@ -15,7 +15,7 @@ def append(outqueue: Queue, is_running: threading.Event, imi: float = 1):
     from queue import Full
 
     def Messages():
-        continual = ignored_localite_messages + [{"coil_0_position": "None"}]
+        continual = constant_messages + [{"coil_0_position": "None"}]
         while True:
             yield from continual
 
