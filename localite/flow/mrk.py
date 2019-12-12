@@ -48,10 +48,20 @@ class Receiver(threading.Thread):
         inlet.pull_chunk()
         self.is_running.set()
         while self.is_running.is_set():
-            mrk, tstamp = inlet.pull_chunk()
-            for m, z in zip(mrk, tstamp):
-                if m != []:
-                    self.buffer.put((m, z))
+            try:
+                mrk, tstamp = inlet.pull_chunk()
+                for m, z in zip(mrk, tstamp):
+                    if m != []:
+                        self.buffer.put((m, z))
+            except Exception as e:  # pragma no cover
+                print(e)
+                self.stop()
+        inlet.close_stream()
+        del inlet
+        print("LSL Receiver shuts down")
+
+    def stop(self):
+        self.is_running.clear()
 
 
 def make_outlet(name="localite_marker") -> Tuple[StreamOutlet, StreamInfo]:

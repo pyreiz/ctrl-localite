@@ -23,6 +23,7 @@ def test_receiver():
             channel_count=1,
             nominal_srate=0,
             channel_format="string",
+            source_id="test_marker_" + pylsl.library_info(),
         )
     )
     r = Receiver(name="test_marker")
@@ -43,6 +44,11 @@ def test_receiver():
     r.clear()
     out = [i[0][0] for i in r]
     assert out == []
+    r.stop()
+    t0 = time.time()
+    while r.is_running.is_set() and time.time() - t0 < 5:
+        pass
+    assert not r.is_running.is_set()
 
 
 @fixture
@@ -91,12 +97,15 @@ def test_sending_out(mrk):
             msg, t1 = stream.pull_chunk()
             self.running = True
             while self.running:
-                msg, t1 = stream.pull_chunk()
-                print(msg)
-                if msg == []:
-                    time.sleep(0.001)
-                else:
-                    self.running = False
+                try:
+                    msg, t1 = stream.pull_chunk()
+                    print(msg)
+                    if msg == []:
+                        time.sleep(0.001)
+                    else:
+                        self.running = False
+                except pylsl.pylsl.LostError:
+                    break
             self.msg = msg
             self.t1 = t1
             del stream

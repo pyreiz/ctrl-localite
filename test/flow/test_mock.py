@@ -19,5 +19,6 @@ def test_cli():
     p = Popen(["localite-mock"], stderr=PIPE, stdout=PIPE)
     time.sleep(1)
     Popen(["localite-mock", "--kill"])
+    time.sleep(1)
     o, e = p.communicate()
     assert b"Shutting MOCK down" in o

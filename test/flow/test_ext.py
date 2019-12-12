@@ -21,6 +21,7 @@ def ext(queue, capsys):
     kill()
     while ext.is_running.is_set():
         pass
+    time.sleep(0.1)
     assert not available()
     time.sleep(0.1)
     out, err = capsys.readouterr()
