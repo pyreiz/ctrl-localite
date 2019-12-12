@@ -52,12 +52,12 @@ def kill(ext: Tuple[str, int] = ("127.0.0.1", 6667)):
     push("cmd", "poison-pill", host=ext[0], port=ext[1])
 
 
-def start(loc_host: str = ""):
+def start(loc_host: str):
     from localite.flow.ext import available
 
     p = Popen(["localite-flow", "--host", loc_host], stderr=PIPE, stdout=PIPE)
     print("[", end="")
-    while not available():
+    while not available():  # pragma no cover
         print(".", end="")
         time.sleep(0.5)
     print("]")

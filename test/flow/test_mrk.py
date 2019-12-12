@@ -11,7 +11,7 @@ def test_buffer():
     inp = [1, 2, 3, 4, 5]
     for i in inp:
         b.put(i)
-    out = [i for i in b]
+    out = b.get_as_list()
     assert inp == out
 
 
@@ -27,7 +27,6 @@ def test_receiver():
         )
     )
     r = Receiver(name="test_marker")
-    #    r = Receiver(name="Liesl-Mock-Marker")
     r.start()
     time.sleep(5)
 
@@ -35,15 +34,13 @@ def test_receiver():
     for i in inp:
         outlet.push_sample([i])
     time.sleep(0.1)
-    out = [i[0][0] for i in r]
+    # buffer should contain everything which was sent
+    out = [i[0][0] for i in r.buffer.get_as_list()]
     assert inp == out
-    inp = ["1", "2", "3", "4", "5"]
-    for i in inp:
-        outlet.push_sample([i])
-    time.sleep(0.1)
-    r.clear()
-    out = [i[0][0] for i in r]
+    # buffer should be empty now
+    out = [i[0][0] for i in r.buffer.get_as_list()]
     assert out == []
+    # receiver should stop within 5 seconds
     r.stop()
     t0 = time.time()
     while r.is_running.is_set() and time.time() - t0 < 5:

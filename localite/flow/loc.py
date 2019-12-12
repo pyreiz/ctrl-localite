@@ -3,7 +3,7 @@ import json
 import pylsl
 import threading
 import time
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Any
 from pylsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
 from itertools import count
@@ -160,7 +160,7 @@ class localiteClient:
 
 def listen_and_queue(
     client: localiteClient, ignore: List[Dict[str, str]], queue: Queue
-) -> None:
+) -> Union[Dict[str, Any], None]:
     """listen to the localice stream and forward to queue
     """
     msg = client.listen()
@@ -170,6 +170,58 @@ def listen_and_queue(
         print("LOC:MSG", msg)
         pl = Payload("mrk", msg, local_clock())
         put_in_queue(pl, queue)
+        return json.loads(msg)
+
+
+class LastMessage(Payload):
+    "A subclass of payload expecting a response from localite"
+
+    def __init__(self):
+        self.expect = None
+        self.counter = 0
+
+    def update(self, payload: Payload):
+        "update the expectation"
+        if payload.fmt != "loc":
+            raise ValueError("Must be a valid loc-command")
+        self.fmt = payload.fmt
+        self.msg = payload.msg
+        self.tstamp = payload.tstamp
+        msg = json.loads(payload.msg)
+        key = list(msg.keys())[0]
+        # FIXME
+        # https://github.com/pyreiz/ctrl-localite/issues/3
+        # current_instrument responds only when it actually switches
+        if key == "current_instrument":
+            print("LOC:HACK", key)
+            self.expect = "current_instrument"
+            self.msg = '{"get":"current_instrument"}'
+
+        elif key == "get":
+            self.expect = msg["get"]
+        elif "single_pulse" in key:
+            self.expect = msg["single_pulse"].lower() + "_didt"
+        else:
+            self.expect = key
+
+    def expects(self, response: Union[Dict[str, Any], None]) -> int:
+        """checks whether the response from localite is the expected message
+        
+        returns
+        -------
+        frustrationlevel: int
+            how often the expectation was not met
+    
+        """
+        if self.expect is None:
+            return 0
+        if response is None:
+            self.counter += 1
+            return self.counter
+        if self.expect in response.keys():
+            self.expect = None
+            self.counter = 0
+            return 0
 
 
 class LOC(threading.Thread):
@@ -194,14 +246,26 @@ class LOC(threading.Thread):
             pass
 
     def run(self):
+        # initialize clients and message expectations
         client = localiteClient(host=self.host, port=self.port)
+        lastmessage = LastMessage()
+        response = None
         self.is_running.set()
         print(f"LOC {self.host}:{self.port} started")
         while self.is_running.is_set():
             try:
                 payload = get_from_queue(self.inbox)
                 if payload is None:
-                    listen_and_queue(client, ignore=self.ignore, queue=self.outbox)
+                    response = listen_and_queue(
+                        client, ignore=self.ignore, queue=self.outbox
+                    )
+                    flevel = lastmessage.expects(response)
+                    if flevel:
+                        print("LOC:FRUST", flevel, response)
+                    if flevel >= 2:
+                        print("LOC:RESEND", lastmessage.msg)
+                        client.send(lastmessage.msg)
+                        lastmessage.counter = 0
                 else:
                     print("LOC:RECV", payload)
                 if payload.fmt == "cmd":
@@ -212,6 +276,7 @@ class LOC(threading.Thread):
                         print("LOC:INVALID", payload)
                 elif payload.fmt == "loc":
                     client.send(payload.msg)
+                    lastmessage.update(payload)
             except Exception as e:  # pragma no cover
                 if self.is_running.set():
                     print("LOC:EXC", e)

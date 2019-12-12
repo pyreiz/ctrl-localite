@@ -1,32 +1,45 @@
 from pylsl import StreamInfo, StreamInlet, StreamOutlet, local_clock, resolve_stream
+import json
 from localite.flow.payload import Queue, get_from_queue
 import socket
 import pkg_resources
 import datetime
 import threading
 import time
-from typing import Tuple, Any
+from typing import Tuple, Any, List
 from collections import deque
+import queue
 
 
 class Buffer:
     def __init__(self):
-        self.queue = deque()
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            return self.queue.pop()
-        except IndexError:
-            raise StopIteration
-
-    def clear(self):
-        self.queue.clear()
+        self.queue = queue.Queue()
 
     def put(self, item: Any):
-        self.queue.appendleft(item)
+        "put a new item in the buffer"
+        self.queue.put(item)
+
+    def get_as_list(self) -> List[Any]:
+        "empty the buffer and return content as a list"
+        content = []
+        while True:
+            try:
+                item = self.queue.get_nowait()
+                self.queue.task_done()
+                content.append(item)
+            except queue.Empty:
+                return content
+
+
+def expectation(msg: str) -> str:
+    msg = json.loads(msg)
+    key = list(msg.keys())[0]
+    if key == "get":
+        return msg["get"]
+    elif "single_pulse" in key:
+        return msg["single_pulse"].lower() + "_didt"
+    else:
+        return key
 
 
 class Receiver(threading.Thread):
@@ -36,11 +49,21 @@ class Receiver(threading.Thread):
         self.buffer = Buffer()
         self.is_running = threading.Event()
 
-    def __iter__(self):
-        return iter(self.buffer)
-
     def clear(self):
-        self.buffer.clear()
+        self.buffer.get_as_list()
+
+    def await_response(self, msg: str):
+        key = expectation(msg)
+        while True:
+            content = self.content
+            for item in content:
+                if key in item[0][0]:
+                    return json.loads(item[0][0]), item[1]
+            time.sleep(0.01)
+
+    @property
+    def content(self) -> List[Any]:
+        return self.buffer.get_as_list()
 
     def run(self):
         sinfo = resolve_stream("name", self.name)[0]

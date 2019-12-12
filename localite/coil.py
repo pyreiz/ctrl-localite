@@ -4,29 +4,35 @@ User-interface to control the TMS
 from localite.flow.ext import push
 from functools import partial
 from localite.flow.mrk import Receiver
+from typing import Tuple
 
 
 class Coil:
     """Coil is a user-friendly interface to control the TMS and Localite
+
+    args
+
+    coil: int = 0
+        the coil to control, either 0 or 1
+    address: Tuple[str, int] = ("127.0.0.1", 6667)
+        the host, port of the EXT server of the localite-flow
+    
     """
 
-    def __init__(self, coil: int = 0, host: str = "127.0.0.1", port: int = 6667):
+    def __init__(self, coil: int = 0, address: Tuple[str, int] = ("127.0.0.1", 6667)):
         self.id = coil
         self.receiver = Receiver(name="localite_marker")
         self.receiver.start()
-        self.push_mrk = partial(push, fmt="mrk", host=host, port=port)
-        self.push_loc = partial(push, fmt="loc", host=host, port=port)
+        host, port = address
+        self._push_mrk = partial(push, fmt="mrk", host=host, port=port)
+        self._push_loc = partial(push, fmt="loc", host=host, port=port)
 
     def push(self, msg: str):
-        self.push_mrk(msg=msg)
-        self.push_loc(msg=msg)
+        self._push_loc(msg=msg)
 
     def push_marker(self, marker: str):
         "pushes a str to the Marker-Stream running in the background"
-        self.push_mrk(msg=marker)
-
-    def send_key_val(self, key: str, val: str):
-        self.push('{"coil_' + self.id + "_" + key + '": ' + val + "}")
+        self._push_mrk(msg=marker)
 
     def activate(self):
         self.push('{"current_instrument":"COIL_' + self.id + '"}')
@@ -36,22 +42,9 @@ class Coil:
         self.push('{"single_pulse": "COIL_' + self.id + '"}')
 
     def request(self, msg: str) -> str:
-        """receive an answer from localite 
-        
-        receive markers from the MRK outlet until the request has passed
-        through the flow. The next available marker should be the answer
-        """
-        self.receiver.clear()
-        self.push(msg)
-        passed = False
-        while not passed:
-            try:
-                if not passed:
-                    passed = next(iter(self.receiver))[0] == msg
-                else:
-                    return next(iter(self.receiver))[0]
-            except StopIteration:
-                pass
+        "request a property from localite"
+        self._push_loc(msg=msg)
+        return self.receiver.await_response(msg)
 
     @property
     def id(self):
@@ -70,7 +63,7 @@ class Coil:
 
     @property
     def type(self):
-        return self.request("type")
+        return self.request('{"get":"type"}')
 
     @property
     def temperature(self):
@@ -103,7 +96,7 @@ class Coil:
 
     @target_index.setter
     def target_index(self, index: int):
-        self.send("target_index", str(index))
+        self.request("target_index", str(index))
         return self.request("target_index")
 
     @property
@@ -121,3 +114,9 @@ class Coil:
     @property
     def status(self):
         return self.request("status")
+
+
+if __name__ == "__main__":
+
+    self = Coil()
+
