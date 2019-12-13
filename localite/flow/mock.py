@@ -54,6 +54,80 @@ def kill(host: str = "127.0.0.1", port=6666):
     client.send(msg)
 
 
+mocked_settings = {
+    "coil_0_amplitude": 1,
+    "coil_0_didt": 99,
+    "coil_0_position": {
+        "q0": 17.0,
+        "qx": 17.0,
+        "qy": 17.0,
+        "qz": 17.0,
+        "x": 37,
+        "y": 77,
+        "z": 53,
+    },
+    "coil_0_position_control": {"position_reached": "TRUE", "index": 1},
+    "coil_0_response": {
+        "mepmaxtime": 18,
+        "mepamplitude": 50,
+        "mepmin": -25,
+        "mepmax": 25,
+    },
+    "coil_0_status": "OK",
+    "coil_0_stimulator_connected": "TRUE",
+    "coil_0_stimulator_mode": {"value": 0, "name": "mock"},
+    "coil_0_stimulator_model": {"value": 0, "name": "mock"},
+    "coil_0_stimulator_status": 1,
+    "coil_0_target_index": 1,
+    "coil_0_temperature": 35,
+    "coil_0_type": "Mock0704",
+    "coil_0_waveform": {"value": 1, "name": "mockphasic"},
+    "coil_1_amplitude": 1,
+    "coil_1_didt": 99,
+    "coil_1_position": {
+        "q0": 17.0,
+        "qx": 17.0,
+        "qy": 17.0,
+        "qz": 17.0,
+        "x": 37,
+        "y": 77,
+        "z": 53,
+    },
+    "coil_1_position_control": {"position_reached": "TRUE", "index": 1},
+    "coil_1_response": {
+        "mepmaxtime": 18,
+        "mepamplitude": 50,
+        "mepmin": -25,
+        "mepmax": 25,
+    },
+    "coil_1_status": "OK",
+    "coil_1_stimulator_connected": "TRUE",
+    "coil_1_stimulator_mode": {"value": 0, "name": "mock"},
+    "coil_1_stimulator_model": {"value": 0, "name": "mock"},
+    "coil_1_stimulator_status": 1,
+    "coil_1_target_index": 1,
+    "coil_1_temperature": 35,
+    "coil_1_type": "Mock0704",
+    "coil_1_waveform": {"value": 1, "name": "mockphasic"},
+    "current_instrument": "COIL_0",
+    "navigation_mode": "NAVIGATION",
+    "patient_registration_status": "REGISTERED",
+    "pointer_position": {
+        "q0": 17.0,
+        "qx": 17.0,
+        "qy": 17.0,
+        "qz": 17.0,
+        "x": 37,
+        "y": 77,
+        "z": 53,
+    },
+    "pointer_position_control": {"position_reached": "TRUE", "index": 1},
+    "pointer_status": "OK",
+    "pointer_target_index": 1,
+    "reference_status": "OK",
+}
+
+
 def create_response(msg: Dict[str, Union[str, int]]) -> Dict:
     if msg is None:
         return None
@@ -77,95 +151,23 @@ def create_response(msg: Dict[str, Union[str, int]]) -> Dict:
         if val in ["COIL_0", "COIL_1"]:
             return {val.lower() + "_didt": 11}
         else:
-            return {"error", msg}
+            return {"error": msg}
     elif key in ["coil_0_amplitude", "coil_1_amplitude"]:  # set amplitude
         if val >= 0 and val <= 100:
             return msg
         else:
-            return {"error", msg}  # suggestion for localite
+            return {"error": msg}  # suggestion for localite
     elif key in ["coil_0_response", "coil_1_response"]:  # set response
         if val["mepmaxtime"] < 0 or val["mepmaxtime"] > 100000:
-            return {"error", msg}
+            return {"error": msg}
         for subkey in ["mepamplitude", "mepmin", "mepmax"]:
             if val[subkey] < -51200 or val[subkey] > 51200:
                 return {"error": msg}  # suggestion for localite
         return msg
 
     elif key == "get":
-        valid = {
-            "coil_0_amplitude": 1,
-            "coil_0_didt": 99,
-            "coil_0_position": {
-                "q0": 17.0,
-                "qx": 17.0,
-                "qy": 17.0,
-                "qz": 17.0,
-                "x": 37,
-                "y": 77,
-                "z": 53,
-            },
-            "coil_0_position_control": {"position_reached": "TRUE", "index": 1},
-            "coil_0_response": {
-                "mepmaxtime": 18,
-                "mepamplitude": 50,
-                "mepmin": -25,
-                "mepmax": 25,
-            },
-            "coil_0_status": "OK",
-            "coil_0_stimulator_connected": "TRUE",
-            "coil_0_stimulator_mode": {"value": 0, "name": "mock"},
-            "coil_0_stimulator_model": {"value": 0, "name": "mock"},
-            "coil_0_stimulator_status": 1,
-            "coil_0_target_index": 1,
-            "coil_0_temperature": 35,
-            "coil_0_type": "Mock0704",
-            "coil_0_waveform": {"value": 1, "name": "mockphasic"},
-            "coil_1_amplitude": 1,
-            "coil_1_didt": 99,
-            "coil_1_position": {
-                "q0": 17.0,
-                "qx": 17.0,
-                "qy": 17.0,
-                "qz": 17.0,
-                "x": 37,
-                "y": 77,
-                "z": 53,
-            },
-            "coil_1_position_control": {"position_reached": "TRUE", "index": 1},
-            "coil_1_response": {
-                "mepmaxtime": 18,
-                "mepamplitude": 50,
-                "mepmin": -25,
-                "mepmax": 25,
-            },
-            "coil_1_status": "OK",
-            "coil_1_stimulator_connected": "TRUE",
-            "coil_1_stimulator_mode": {"value": 0, "name": "mock"},
-            "coil_1_stimulator_model": {"value": 0, "name": "mock"},
-            "coil_1_stimulator_status": 1,
-            "coil_1_target_index": 1,
-            "coil_1_temperature": 35,
-            "coil_1_type": "Mock0704",
-            "coil_1_waveform": {"value": 1, "name": "mockphasic"},
-            "current_instrument": "COIL_0",
-            "navigation_mode": "NAVIGATION",
-            "patient_registration_status": "REGISTERED",
-            "pointer_position": {
-                "q0": 17.0,
-                "qx": 17.0,
-                "qy": 17.0,
-                "qz": 17.0,
-                "x": 37,
-                "y": 77,
-                "z": 53,
-            },
-            "pointer_position_control": {"position_reached": "TRUE", "index": 1},
-            "pointer_status": "OK",
-            "pointer_target_index": 1,
-            "reference_status": "OK",
-        }
         try:
-            return {val: valid[val]}
+            return {val: mocked_settings[val]}
         except KeyError:
             return {"error": msg}
     else:
