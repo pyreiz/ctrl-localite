@@ -21,12 +21,12 @@ jobs:
         pip install -U pip
         pip install git+https://github.com/labstreaminglayer/liblsl-Python.git 
         pip install -r requirements.txt
-        pip install .
-    - name: Test with pytest
-      run: |
         pip install coverage
         pip install pytest-cov
         pip install pytest
+        pip install .
+    - name: Test with pytest
+      run: |
         pytest
     - name: Submit coverage report
       env:
