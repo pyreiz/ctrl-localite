@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 from localite.flow.payload import Payload, has_poison, Queue, put_in_queue
-from pylsl import local_clock
+from localite.flow.lsl import local_clock
 from typing import Dict, Any
 from subprocess import Popen
 from typing import Union, Tuple

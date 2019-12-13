@@ -1,7 +1,7 @@
 from typing import NewType, Dict, Union, Tuple
 from queue import Queue
 import json
-from pylsl import local_clock
+from localite.flow.lsl import local_clock
 
 TimeStamp = Union[
     int, None
@@ -25,9 +25,16 @@ class Payload:
 
     def __eq__(self, other):
         if isinstance(other, Payload):
-            return all((self.fmt == other.fmt, self.msg == other.msg, self.tstamp == other.tstamp))
+            return all(
+                (
+                    self.fmt == other.fmt,
+                    self.msg == other.msg,
+                    self.tstamp == other.tstamp,
+                )
+            )
         else:
             return False
+
 
 def has_poison(payload: Payload) -> bool:
     "return whether there is a poison-pill in the Payload"

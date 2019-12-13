@@ -26,7 +26,7 @@ def mock():
 def test_setup_tear_down(mock, capsys):
     start_threaded(loc_host="127.0.0.1")
     kill()
-    time.sleep(1)
+    time.sleep(2)
     pipe = capsys.readouterr()
     assert "Shutting EXT down" in pipe.out
     assert "Shutting CTRL down" in pipe.out

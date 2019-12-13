@@ -2,7 +2,7 @@ import socket
 import json
 import threading
 from typing import List, Union, Dict, Any, Tuple
-from pylsl import local_clock
+from localite.flow.lsl import local_clock
 from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
 
 constant_messages = [
