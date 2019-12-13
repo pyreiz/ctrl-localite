@@ -42,6 +42,7 @@ if "win" not in sys.platform:
     def test_coil_raw_request(coil):
         msg = '{"get":"coil_0_temperature"}'
         coil._push_loc(msg=msg)
+        time.sleep(1)
         assert coil.receiver.await_response(msg)[0] == {"coil_0_temperature": 35}
 
     def test_coil_static_properties(coil):

@@ -4,6 +4,7 @@ import threading
 import time
 from subprocess import Popen, PIPE
 import pytest
+from os import environ
 
 
 def test_message_queue():
@@ -18,7 +19,7 @@ def test_message_queue():
 
 
 def test_cli():
-    p = Popen(["localite-mock"], stderr=PIPE, stdout=PIPE)
+    p = Popen(["localite-mock"], env=environ, stderr=PIPE, stdout=PIPE)
     time.sleep(1)
     Popen(["localite-mock", "--kill"])
     time.sleep(1)

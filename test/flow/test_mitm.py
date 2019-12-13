@@ -4,6 +4,7 @@ from localite.flow.mitm import start_threaded, start, kill
 import time
 from pytest import fixture
 from subprocess import Popen, PIPE
+from os import environ
 
 
 @fixture(scope="module")
@@ -37,7 +38,7 @@ def test_setup_tear_down(mock, capsys):
 def test_cli(mock):
     p = start(host="127.0.0.1")
     time.sleep(1)
-    o, e = Popen(["localite-flow", "--kill"], stdout=PIPE).communicate()
+    o, e = Popen(["localite-flow", "--kill"], env=environ, stdout=PIPE).communicate()
     assert b"poison-pill" in o
 
     o, e = p.communicate()
@@ -46,6 +47,6 @@ def test_cli(mock):
 
 
 def test_cli_help():
-    out = Popen(["localite-flow"], stdout=PIPE)
+    out = Popen(["localite-flow"], env=environ, stdout=PIPE)
     o, e = out.communicate()
     assert b"usage: localite-flow [-h]" in o

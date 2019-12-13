@@ -54,6 +54,8 @@ class Coil:
         self._push_loc = partial(push, fmt="loc", host=host, port=port)
         self.receiver = Receiver(name="localite_marker")
         self.receiver.start()
+        while not self.receiver.is_running.is_set():
+            pass
         self.id = coil
 
     def await_connection(self):
