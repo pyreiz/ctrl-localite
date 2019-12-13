@@ -1,51 +1,51 @@
- [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://en.wikipedia.org/wiki/MIT_License) [![pytest-status](https://github.com/pyreiz/ctrl-localite/workflows/pytest/badge.svg)](https://github.com/pyreiz/ctrl-localite/actions) [![Coverage Status](https://coveralls.io/repos/github/pyreiz/ctrl-localite/badge.svg?branch=develop)](https://coveralls.io/github/pyreiz/ctrl-localite?branch=develop)
+ [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://en.wikipedia.org/wiki/MIT_License) [![pytest-status](https://github.com/pyreiz/ctrl-localite/workflows/pytest/badge.svg)](https://github.com/pyreiz/ctrl-localite/actions) [![Coverage Status](https://coveralls.io/repos/github/pyreiz/ctrl-localite/badge.svg?branch=master)](https://coveralls.io/github/pyreiz/ctrl-localite?branch=master) [![Documentation Status](https://readthedocs.org/projects/ctrl-localite/badge/?version=latest)](https://ctrl-localite.readthedocs.io/en/latest/?badge=latest)
 
-### ctrl-localite
+ctrl-localite
+------------
 
-A repository to control localite 4.0 
+This package allows you to stream the current settings and messages from your [localite TMS Navigator](https://www.localite.de/en/home/>) as [LSL stream](https://labstreaminglayer.readthedocs.io/) Additionally, it allows you to control the TMS device connected to the localite software over an api.
 
-### Command Line Tools
+This package has been developed using MagVenture TMS devices connected with localite TMS Navigator, and with a beta version of TMS Navigator 4.0.
 
-- localiteLSL
+Installation
+------------
 
-starts reading from localite TCP/IP-json and forwards all stimulation trigger
-events as LSL Marker stream
+``` bash
+    git clone git@github.com:pyreiz/ctrl-localite.git
+    cd ctrl-localite
+    pip install .
+```
 
-- localiteMock
+Basic Usage
+-----------
 
-mocks a localite TCP/IP-json server for testing and development
+Usage of the API depends on a running localite-flow Server. Start this server ideally from the command line using e.g. ``localite-flow --host HOST`` with HOST the ip-adress of your localite PC.
+
+    usage: localite-flow [-h] [--host HOST] [--kill]
+
+    optional arguments:
+    -h, --help   show this help message and exit
+    --host HOST  The IP-Adress of the localite-PC
+    --kill
 
 
-### Information Flow
 
-![Alt text](https://g.gravizo.com/source/custom_mark10?https://raw.githubusercontent.com/pyreiz/ctrl-localite/develop/readme.md)
-<details> 
-<summary></summary>
-custom_mark10
-    digraph Flow { 
-        rankdir=LR;     
-        {
-        node [shape = circle]
-        node [style=filled]
-        rankdir=LR;            
-        QUEUE -> CTRL
-        EXT -> QUEUE        
-        CTRL -> LOC
-        CTRL -> MRK
-        LOC -> QUEUE   
-        }
-        fo[label="", shape=plaintext] 
-        fo -> EXT
-        to[label="", shape=plaintext] 
-        lo[label="", shape=plaintext] 
-        MRK -> to
-        LOC -> lo
-    }
-custom_mark10
-</details>
+After that, you can use the python API to access the stream and control TMS Navigator remotely.
 
-The EXT receives a payload via JSON over TCP-IP. Payloads have to have the form
-`[<fmt>:str, <message>:str, <tstamp>:int]`. The fmt defines how the message will be distributed. Only the following targets for `fmt` are valid: `["cmd", "mrk", "loc"]`. Invalid fmts will not be forwarded, and their message ignored. 
+``` python
+    from localite.api import Coil
+    coil = Coil(0) # initializes the api for coil 1 (of e.g. 2)
 
-Whether the message part of the payload is valid depends on the recipient and will be evaluated there.
+    coil.amplitude = 30 # sets the amplitude of this coil to 30% MSO
+    coil.trigger() # triggers the coil
 
+    coil.push_marker("Experiment finished") # publishes a marker over LSL
+```
+
+
+Information Flow
+----------------
+
+Information flows within the server in a relatively complex fashion. There is an EXT listening to messsages sent over the API, which are queued to be delivered to LOC, where they are sent to the localite PC. Concurrently, LOC is constantly listening for messages from the localite PC and sends them indirectly to MRK, where these messages are pubklished in an LSL Marker StreamOutlet. This allows you to publish additional markers over the API, and additonally supports easy automated logging of any command sent to localite.
+
+![flow-diagram](docs/source/_static/flow-diagram.png)
