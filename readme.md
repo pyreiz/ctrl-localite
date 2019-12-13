@@ -7,6 +7,11 @@ This package allows you to stream the current settings and messages from your [l
 
 This package has been developed using MagVenture TMS devices connected with localite TMS Navigator, and with a beta version of TMS Navigator 4.0.
 
+Documentation
+-------------
+
+A slightly more extensive documentation can be found on [readthedocs](https://ctrl-localite.readthedocs.io/en/latest/?badge=latest).
+
 Installation
 ------------
 
