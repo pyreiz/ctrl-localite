@@ -1,5 +1,5 @@
 from pytest import fixture
-from localite.flow.mrk import MRK, Buffer, Receiver
+from localite.flow.mrk import MRK, Buffer, Receiver, expectation
 from localite.flow.payload import Queue, Payload
 import time
 import pylsl
@@ -81,6 +81,12 @@ def test_latency_below_1ms(mrk, capsys):
     pipe = capsys.readouterr()
     latency = pipe.out.split("delayed by ")[1].split("ms")[0]
     assert float(latency) < 0.001
+
+
+def test_expectation():
+    assert expectation('{"get": "coil_0_amplitude"}') == "coil_0_amplitude"
+    assert expectation('{"single_pulse": "COIL_0"}') == "coil_0_didt"
+    assert expectation('{"coil_0_amplitude": 1}') == "coil_0_amplitude"
 
 
 def test_sending_out(mrk):

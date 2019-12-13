@@ -41,8 +41,10 @@ def test_create_response():
     assert rsp in cr({"coil_0_response": rsp}).values()
     bad = {"mepmaxtime": -99999, "mepamplitude": 50, "mepmin": -25, "mepmax": 25}
     assert "error" in cr({"coil_0_response": bad}).keys()
+    bad = {"mepmaxtime": 18, "mepamplitude": -99999, "mepmin": -25, "mepmax": 25}
+    assert "error" in cr({"coil_0_response": bad}).keys()
     assert "error" in cr({"bad": "bad"}).keys()
-    assert 1 in cr({"get": "coil_0_amplitude"}).values()
+    assert "error" in cr({"get": "bad"}).keys()
 
 
 prms = [(k, v) for k, v in mocked_settings.items()]

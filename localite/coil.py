@@ -63,6 +63,7 @@ class Coil:
         print("]")
 
     def stream_info(self):
+        self.type
         self.model
         self.mode
         self.waveform
@@ -126,7 +127,7 @@ class Coil:
         response = self.request("didt")
         # if there was not yet a stimulus, localite returns an error message
         # we skip that and just return 0
-        if type(response) is dict and "reason" in response.items(): # pragma no cover
+        if type(response) is dict and "reason" in response.items():  # pragma no cover
             return None
         else:
             return response
@@ -152,7 +153,7 @@ class Coil:
     def target_index(self, index: int) -> int:
         "set the index of the next target"
         msg = json.dumps({f"coil_{self._id}_target_index": index})
-        response = self._request(msg)        
+        response = self._request(msg)
         if type(response) is dict and "reason" in response.keys():
             print(response["reason"])
         return self.request("target_index")
@@ -202,9 +203,3 @@ class Coil:
             
         """
         return self.request("stimulator_mode")["name"]
-
-
-if __name__ == "__main__":
-
-    self = Coil()
-

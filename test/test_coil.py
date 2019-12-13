@@ -34,11 +34,11 @@ if "win" not in sys.platform:
     @fixture(scope="module")
     def coil(mock):
         coil = Coil()
+        coil.await_connection()
         yield coil
         coil.receiver.stop()
 
     def test_coil_raw_request(coil):
-
         msg = '{"get":"coil_0_temperature"}'
         coil._push_loc(msg=msg)
         assert coil.receiver.await_response(msg)[0] == {"coil_0_temperature": 35}

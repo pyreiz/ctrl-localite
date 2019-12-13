@@ -254,7 +254,3 @@ class Mock(threading.Thread):
 
     def kill(self):
         kill(self.host, self.port)
-
-
-if __name__ == "__main__":
-    Mock().start()
