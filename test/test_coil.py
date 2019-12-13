@@ -20,6 +20,7 @@ def test_pythonize():
 
 
 if "win" not in sys.platform:
+    # when run with pytest on windows 10, the requests run stale after a while (around 10 requests), and deadlock. The same tests run fine when run manually. This might be related to subprocess issues caused by pytest in combination with pylsl
 
     @fixture(scope="module")
     def mock():

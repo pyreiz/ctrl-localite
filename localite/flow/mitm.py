@@ -28,7 +28,7 @@ def start_threaded(
     mrkbox = Queue()
     ext = EXT(host=address[0], port=address[1], queue=queue)
     ctrl = CTRL(queue=queue, loc=locbox, mrk=mrkbox)
-    loc = LOC(outbox=queue, inbox=locbox, address= (loc_host, loc_port))
+    loc = LOC(outbox=queue, inbox=locbox, address=(loc_host, loc_port))
     mrk = MRK(mrk=mrkbox)
     mrk.start()
     loc.start()
@@ -41,7 +41,8 @@ def start_threaded(
 
 
 def kill(ext: Tuple[str, int] = ("127.0.0.1", 6667)):
-    """kill a localite-flow
+    """kill the localite-flow at the given address
+
     args
     ----
     ext: Tuple[str, int] = ("127.0.0.1", 6667)
@@ -52,10 +53,20 @@ def kill(ext: Tuple[str, int] = ("127.0.0.1", 6667)):
     push("cmd", "poison-pill", host=ext[0], port=ext[1])
 
 
-def start(loc_host: str):
+def start(host: str):
+    """start localite-flow in a subprocess
+    
+    args
+    ----
+    host: str
+        the ip adress of the localite PC
+
+    stop the subprocess gracefully using :meth:`~.kill`
+
+    """
     from localite.flow.ext import available
 
-    p = Popen(["localite-flow", "--host", loc_host], stderr=PIPE, stdout=PIPE)
+    p = Popen(["localite-flow", "--host", host], stderr=PIPE, stdout=PIPE)
     print("[", end="")
     while not available():  # pragma no cover
         print(".", end="")
