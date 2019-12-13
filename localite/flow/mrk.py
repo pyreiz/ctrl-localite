@@ -60,6 +60,7 @@ class Receiver(threading.Thread):
                 if key in item[0][0]:
                     return json.loads(item[0][0]), item[1]
             time.sleep(0.01)
+            print(".", end="")
 
     @property
     def content(self) -> List[Any]:

@@ -1,28 +1,40 @@
 import socket
 import json
-import pylsl
 import threading
 import time
-from typing import List, Dict, Union
-from pylsl import local_clock
-from localite.flow.payload import Queue, get_from_queue, put_in_queue, Payload
-from localite.flow.loc import localiteClient, constant_messages
-from itertools import repeat
-from queue import Empty
+from typing import Dict, Union
+from localite.flow.payload import Queue
+from localite.flow.loc import localiteClient
 
 
 def append(outqueue: Queue, is_running: threading.Event, imi: float = 1):
     from queue import Full
 
     def Messages():
-        continual = constant_messages + [{"coil_0_position": "None"}]
+        continual = [
+            {"pointer_status": "BLOCKED"},
+            {"reference_status": "BLOCKED"},
+            {"coil_1_status": "BLOCKED"},
+            {"coil_0_status": "BLOCKED"},
+            {
+                "coil_0_position": {
+                    "q0": 17.0,
+                    "qx": 17.0,
+                    "qy": 17.0,
+                    "qz": 17.0,
+                    "x": 37,
+                    "y": 77,
+                    "z": 53,
+                }
+            },
+        ]
         while True:
             yield from continual
 
     message = Messages()
     while not is_running.is_set():
         time.sleep(0.1)
-    print("Starting MOCK-MSG-QUEUE")
+    print("Starting MOCK-MSG-QUEUER")
     while is_running.is_set():
         time.sleep(imi)
         msg = next(message)
@@ -161,12 +173,16 @@ def create_response(msg: Dict[str, Union[str, int]]) -> Dict:
 
 
 def send(client: socket.socket, outqueue: Queue) -> None:
+    while outqueue.unfinished_tasks == 0:
+        time.sleep(0.1)
     item = outqueue.get()
     outqueue.task_done()
     print("MOCK:SEND", item, outqueue.unfinished_tasks)
     msg = json.dumps(item).encode("ascii")
     client.sendall(msg)
-    client.close()
+
+
+# client.close()
 
 
 class Mock(threading.Thread):
@@ -191,7 +207,7 @@ class Mock(threading.Thread):
                 msg += prt
                 msg = json.loads(msg.decode("ascii"))
                 return msg
-            except json.JSONDecodeError as e:  # pragma no cover
+            except json.JSONDecodeError:  # pragma no cover
                 pass
             except socket.timeout:
                 return None
@@ -205,15 +221,13 @@ class Mock(threading.Thread):
         listener.bind((self.host, self.port))
         listener.settimeout(1)
         listener.listen(1)  # one  unaccepted client is allowed
-        outqueue = Queue(maxsize=10)
-        outqueue.put({"coil_0_position": "None"})
+        outqueue = Queue(maxsize=100)
         appender = threading.Thread(target=append, args=(outqueue, self.is_running,))
-        appender.start()
         self.is_running.set()
-        print("Starting MOCK")
+        appender.start()
+        print(f"Starting MOCK at {self.host}:{self.port}")
         while self.is_running.is_set():
             try:
-                client = None
                 client, address = listener.accept()
                 msg = self.read_msg(client)
                 if msg is not None:
@@ -230,16 +244,6 @@ class Mock(threading.Thread):
                     # always send a message, if there is none queued, wait
                     # until one is available
                     send(client, outqueue)
-
-            except socket.timeout:
-                client = None
-            except (
-                ConnectionError,
-                ConnectionAbortedError,
-                ConnectionResetError,
-                ConnectionRefusedError,
-            ):  # pragma no cover
-                client = None
             except Exception as e:  # pragma no cover
                 print("MOCK:EXC", str(e))
 
@@ -248,3 +252,7 @@ class Mock(threading.Thread):
 
     def kill(self):
         kill(self.host, self.port)
+
+
+if __name__ == "__main__":
+    Mock().start()
