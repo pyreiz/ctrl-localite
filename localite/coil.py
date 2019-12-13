@@ -58,7 +58,7 @@ class Coil:
 
     def await_connection(self):
         print("[", end="")
-        while not self.connected:
+        while not self.connected:  # pragma no cover
             print(".", end="")
         print("]")
 
@@ -203,3 +203,18 @@ class Coil:
             
         """
         return self.request("stimulator_mode")["name"]
+
+    def set_response(
+        self, mepmaxtime: float, mepamplitude: float, mepmin: float, mepmax: float
+    ):
+        key = f"coil_{self.id}_response"
+        msg = {
+            key: {
+                "mepmaxtime": mepmaxtime,
+                "mepamplitude": mepamplitude,
+                "mepmin": mepmin,
+                "mepmax": mepmax,
+            }
+        }
+        self._push_loc(msg=json.dumps(msg))
+

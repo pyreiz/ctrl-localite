@@ -38,12 +38,12 @@ class Buffer:
 
 
 def expectation(msg: str) -> str:
-    msg = json.loads(msg)
-    key = list(msg.keys())[0]
+    dmsg = json.loads(msg)
+    key = list(dmsg.keys())[0]
     if key == "get":
-        return msg["get"]
+        return dmsg["get"]
     elif "single_pulse" in key:
-        return msg["single_pulse"].lower() + "_didt"
+        return dmsg["single_pulse"].lower() + "_didt"
     else:
         return key
 

@@ -34,3 +34,7 @@ jobs:
       run: |
         pip install coveralls
         coveralls
+    - name: Static type checking
+      run: |
+        pip install mypy
+        mypy
