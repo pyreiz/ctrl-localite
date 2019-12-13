@@ -7,7 +7,7 @@ with (Path(__file__).parent / "readme.md").open("r") as f:
 
 setup(
     name="localite",
-    version="0.3.0",
+    version="0.1.0",
     description="Stream from and control TMS using Localite",
     long_description=long_description,
     long_description_content_type="text/markdown",
