@@ -35,7 +35,7 @@ def test_setup_tear_down(mock, capsys):
 
 
 def test_cli(mock):
-    p = start(loc_host="127.0.0.1")
+    p = start(host="127.0.0.1")
     time.sleep(1)
     o, e = Popen(["localite-flow", "--kill"], stdout=PIPE).communicate()
     assert b"poison-pill" in o

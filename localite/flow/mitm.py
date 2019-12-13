@@ -16,12 +16,16 @@ def start_threaded(
 
     args
     ----
+
     loc_host: str
         the ip-adress of the localite PC
+
     loc_port: int = 6666
         the port of the localite Server
-    ext: Tuple[str, int] = ("127.0.0.1", 6667)
-        the host:port where the localite-flow server will be setup    
+
+    ext: Tuple[str, int]  ("127.0.0.1", 6667)
+        the host:port where the localite-flow server will be setup 
+    
     """
     queue = Queue()
     locbox = Queue()
@@ -41,7 +45,7 @@ def start_threaded(
 
 
 def kill(ext: Tuple[str, int] = ("127.0.0.1", 6667)):
-    """kill the localite-flow at the given address
+    """ kill the localite-flow at the given address, whether it runs as a subprocess or in a local thread
 
     args
     ----
@@ -54,14 +58,16 @@ def kill(ext: Tuple[str, int] = ("127.0.0.1", 6667)):
 
 
 def start(host: str):
-    """start localite-flow in a subprocess
+    """starts the localite-flow as a subprocess
     
+    You can stop the subprocess gracefully using :meth:`~localite.flow.mitm.kill`
+
+
     args
     ----
     host: str
         the ip adress of the localite PC
 
-    stop the subprocess gracefully using :meth:`~.kill`
 
     """
     from localite.flow.ext import available

@@ -10,7 +10,16 @@ Welcome to ctrl-localite's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+API
+---
 
+The main interface to controlling your TMS coil with localite-flow
+
+.. autosummary::
+   :toctree: _autosummary
+   :template: module.rst
+
+   localite.api
 
 Indices and tables
 ==================
