@@ -42,6 +42,7 @@ if "win" not in sys.platform:
     def test_coil_raw_request(coil):
         msg = '{"get":"coil_0_temperature"}'
         coil._push_loc(msg=msg)
+        time.sleep(1)
         assert coil.receiver.await_response(msg)[0] == {"coil_0_temperature": 35}
 
     def test_coil_static_properties(coil):
@@ -50,15 +51,17 @@ if "win" not in sys.platform:
         assert coil.temperature == 35
         assert coil.didt == 99
         assert coil.visible
-        assert coil.connected == True
+        assert coil.connected is True
         with raises(AttributeError):
             coil.connected = False
+        assert coil.position_reached is True
         assert coil.model == "Mock0704 mock"
 
     def test_coil_setable_properties(coil):
         assert coil.target_index == 1
         coil.target_index = 2
-        coil.target_index = -1
+        with raises(ValueError):
+            coil.target_index = -1
         assert (coil.amplitude == 2) == False
         assert coil.amplitude == 1
         coil.amplitude = 0
@@ -79,6 +82,9 @@ if "win" not in sys.platform:
         assert coil.id == "0"
         with raises(ValueError):
             coil.id = -1
+
+    def test_coil_response(coil):
+        coil.set_response(mepmaxtime=18, mepamplitude=40, mepmin=-20, mepmax=20)
 
     def test_coil_trigger(coil):
         coil.trigger()

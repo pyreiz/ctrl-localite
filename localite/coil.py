@@ -6,7 +6,7 @@ from functools import partial
 from localite.flow.mrk import Receiver
 from typing import Tuple, Dict, Any, Union
 import json
-
+from time import sleep
 
 def pythonize_values(v: str) -> Union[bool, None, str]:
     "pythonize a dictionaries values"
@@ -54,11 +54,13 @@ class Coil:
         self._push_loc = partial(push, fmt="loc", host=host, port=port)
         self.receiver = Receiver(name="localite_marker")
         self.receiver.start()
+        while not self.receiver.is_running.is_set():
+            pass
         self.id = coil
 
     def await_connection(self):
         print("[", end="")
-        while not self.connected:
+        while not self.connected:  # pragma no cover
             print(".", end="")
         print("]")
 
@@ -152,10 +154,10 @@ class Coil:
     @target_index.setter
     def target_index(self, index: int) -> int:
         "set the index of the next target"
+        if index < 0:
+            raise ValueError("Index must be higher than 0")
         msg = json.dumps({f"coil_{self._id}_target_index": index})
-        response = self._request(msg)
-        if type(response) is dict and "reason" in response.keys():
-            print(response["reason"])
+        self._push_loc(msg=msg)        
         return self.request("target_index")
 
     @property
@@ -203,3 +205,18 @@ class Coil:
             
         """
         return self.request("stimulator_mode")["name"]
+
+    def set_response(
+        self, mepmaxtime: float, mepamplitude: float, mepmin: float, mepmax: float
+    ):
+        key = f"coil_{self.id}_response"
+        msg = {
+            key: {
+                "mepmaxtime": mepmaxtime,
+                "mepamplitude": mepamplitude,
+                "mepmin": mepmin,
+                "mepmax": mepmax,
+            }
+        }
+        self._push_loc(msg=json.dumps(msg))
+

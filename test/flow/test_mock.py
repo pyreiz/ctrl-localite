@@ -4,6 +4,7 @@ import threading
 import time
 from subprocess import Popen, PIPE
 import pytest
+from os import environ
 
 
 def test_message_queue():
@@ -18,7 +19,7 @@ def test_message_queue():
 
 
 def test_cli():
-    p = Popen(["localite-mock"], stderr=PIPE, stdout=PIPE)
+    p = Popen(["localite-mock"], env=environ, stderr=PIPE, stdout=PIPE)
     time.sleep(1)
     Popen(["localite-mock", "--kill"])
     time.sleep(1)
@@ -31,8 +32,8 @@ def test_create_response():
     assert "error" in cr({"current_instrument": "GARBAGE"}).keys()
     assert "NONE" in cr({"current_instrument": "NONE"}).values()
     assert 1 in cr({"coil_0_target_index": 1}).values()
-    assert "error" in cr({"coil_0_target_index": -1}).keys()
-    assert "error" in cr({"coil_0_target_index": "T"}).keys()
+    assert "reason" in cr({"coil_0_target_index": -1}).keys()
+    assert "reason" in cr({"coil_0_target_index": "T"}).keys()
     assert "coil_0_didt" in cr({"single_pulse": "COIL_0"}).keys()
     assert "error" in cr({"single_pulse": "COIL_2"}).keys()
     assert 1 in cr({"coil_0_amplitude": 1}).values()

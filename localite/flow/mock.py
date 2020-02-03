@@ -2,7 +2,7 @@ import socket
 import json
 import threading
 import time
-from typing import Dict, Union
+from typing import Dict, Union, Any
 from localite.flow.payload import Queue
 from localite.flow.loc import localiteClient
 
@@ -49,8 +49,7 @@ def append(outqueue: Queue, is_running: threading.Event, imi: float = 1):
 
 def kill(host: str = "127.0.0.1", port=6666):
     client = localiteClient(host, port)
-    msg = {"cmd": "poison-pill"}
-    msg = json.dumps(msg)
+    msg = json.dumps({"cmd": "poison-pill"})
     client.send(msg)
 
 
@@ -128,7 +127,7 @@ mocked_settings = {
 }
 
 
-def create_response(msg: Dict[str, Union[str, int]]) -> Dict:
+def create_response(msg: Any) -> Union[Dict, None]:
     if msg is None:
         return None
     key = list(msg.keys())[0]
@@ -143,10 +142,13 @@ def create_response(msg: Dict[str, Union[str, int]]) -> Dict:
         "coil_0_target_index",
         "coil_1_target_index",
     ]:  # set target index
-        if type(val) == int and val > 0:
+        if type(val) is int and val > 0:
             return msg
         else:
-            return {"error": msg}
+            return {
+                "request": {key: val},
+                "reason": f"Index value out of range. Value: {val}, Range: [0..0]",
+            }
     elif key == "single_pulse":  # trigger
         if val in ["COIL_0", "COIL_1"]:
             return {val.lower() + "_didt": 11}
@@ -199,7 +201,7 @@ class Mock(threading.Thread):
             pass
 
     @staticmethod
-    def read_msg(client: socket.socket) -> dict:
+    def read_msg(client: socket.socket) -> Union[Dict, None]:
         "parse the message"
         client.settimeout(0.1)
         msg = b" "
@@ -207,8 +209,8 @@ class Mock(threading.Thread):
             try:
                 prt = client.recv(1)
                 msg += prt
-                msg = json.loads(msg.decode("ascii"))
-                return msg
+                dmsg = json.loads(msg.decode("ascii"))
+                return dmsg
             except json.JSONDecodeError:  # pragma no cover
                 pass
             except socket.timeout:

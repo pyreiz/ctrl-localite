@@ -126,7 +126,6 @@ class localiteClient:
 
     def write(self, msg: str) -> None:
         self.socket.sendall(msg.encode("ascii"))
-        return self
 
     def read(self) -> Union[None, str]:
         "parse the message"
@@ -134,10 +133,10 @@ class localiteClient:
         while True:
             try:
                 prt = self.socket.recv(1)
-                bmsg += prt               
+                bmsg += prt
                 dec = bmsg.decode("ascii")
                 return json.dumps(json.loads(dec))
-            except json.JSONDecodeError:  # pragma no cover              
+            except json.JSONDecodeError:  # pragma no cover
                 pass
             except Exception as e:  # pragma no cover
                 print("LCL:EXC:", e)
@@ -161,7 +160,7 @@ def listen_and_queue(
     """listen to the localice stream and forward to queue
     """
     msg = client.listen()
-    if json.loads(msg) in ignore or None:
+    if msg is None or json.loads(msg) in ignore:
         return None
     else:
         print("LOC:MSG", msg)
@@ -175,12 +174,12 @@ class LastMessage(Payload):
 
     def __init__(self):
         self.reset()
-        
+
     def reset(self):
         self.expect = None
         self.counter = 0
         self.msg = ""
-        
+
     def update(self, payload: Payload):
         "update the expectation"
         if payload.fmt != "loc":  # pragma no cover
@@ -223,6 +222,7 @@ class LastMessage(Payload):
             print("LOC:FOUND", response)
             self.reset()
             return 0
+        return 0
 
 
 class LOC(threading.Thread):
@@ -255,23 +255,23 @@ class LOC(threading.Thread):
         while self.is_running.is_set():
             try:
                 payload = get_from_queue(self.inbox)
-                if payload is None:           
+                if payload is None:
                     if "status" in lastmessage.msg:
                         response = listen_and_queue(
                             client, ignore=[], queue=self.outbox
                         )
-                    else:                         
+                    else:
                         response = listen_and_queue(
                             client, ignore=self.ignore, queue=self.outbox
                         )
-                    flevel = lastmessage.expects(response)
-                    #print("LOC:FRUST", flevel, response)
-#                    if flevel:
-#                        print("LOC:FRUST", flevel, response)
-#                    if flevel >= 2:
-#                        print("LOC:RESEND", lastmessage.msg)
-#                        client.send(lastmessage.msg)
-#                        lastmessage.counter = 0
+                    # sometimes, the get: "target_index" is ignored. 
+                    # in these cases, resend
+                    if "target_index" in lastmessage.msg:
+                        flevel = lastmessage.expects(response)                
+                        if flevel >= 2:                        
+                            print("LOC:RESEND", lastmessage.msg)
+                            client.send(lastmessage.msg)
+                            lastmessage.counter = 0
                 else:
                     print("LOC:RECV", payload)
                 if payload.fmt == "cmd":

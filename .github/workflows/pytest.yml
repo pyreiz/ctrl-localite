@@ -21,12 +21,12 @@ jobs:
         pip install -U pip
         pip install git+https://github.com/labstreaminglayer/liblsl-Python.git 
         pip install -r requirements.txt
+        pip install coverage==4.5.4
+        pip install pytest-cov
+        pip install pytest
         pip install .
     - name: Test with pytest
       run: |
-        pip install coverage
-        pip install pytest-cov
-        pip install pytest
         pytest
     - name: Submit coverage report
       env:
@@ -34,3 +34,7 @@ jobs:
       run: |
         pip install coveralls
         coveralls
+    - name: Static type checking
+      run: |
+        pip install mypy
+        mypy
