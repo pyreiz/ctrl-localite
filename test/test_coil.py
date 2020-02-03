@@ -60,7 +60,8 @@ if "win" not in sys.platform:
     def test_coil_setable_properties(coil):
         assert coil.target_index == 1
         coil.target_index = 2
-        coil.target_index = -1
+        with raises(ValueError):
+            coil.target_index = -1
         assert (coil.amplitude == 2) == False
         assert coil.amplitude == 1
         coil.amplitude = 0
