@@ -264,14 +264,14 @@ class LOC(threading.Thread):
                         response = listen_and_queue(
                             client, ignore=self.ignore, queue=self.outbox
                         )
-                    flevel = lastmessage.expects(response)
-                    # print("LOC:FRUST", flevel, response)
-                #                    if flevel:
-                #                        print("LOC:FRUST", flevel, response)
-                #                    if flevel >= 2:
-                #                        print("LOC:RESEND", lastmessage.msg)
-                #                        client.send(lastmessage.msg)
-                #                        lastmessage.counter = 0
+                    # sometimes, the get: "target_index" is ignored. 
+                    # in these cases, resend
+                    if "target_index" in lastmessage.msg:
+                        flevel = lastmessage.expects(response)                
+                        if flevel >= 2:                        
+                            print("LOC:RESEND", lastmessage.msg)
+                            client.send(lastmessage.msg)
+                            lastmessage.counter = 0
                 else:
                     print("LOC:RECV", payload)
                 if payload.fmt == "cmd":

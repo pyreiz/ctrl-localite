@@ -6,7 +6,7 @@ from functools import partial
 from localite.flow.mrk import Receiver
 from typing import Tuple, Dict, Any, Union
 import json
-
+from time import sleep
 
 def pythonize_values(v: str) -> Union[bool, None, str]:
     "pythonize a dictionaries values"
@@ -154,11 +154,11 @@ class Coil:
     @target_index.setter
     def target_index(self, index: int) -> int:
         "set the index of the next target"
+        if index < 0:
+            raise ValueError("Index must be higher than 0")
         msg = json.dumps({f"coil_{self._id}_target_index": index})
-        response = self._request(msg)
-        if type(response) is dict and "reason" in response.keys():
-            print(response["reason"])
-        return self.request("target_index")
+        self._push_loc(msg=msg)        
+        self.request("target_index")
 
     @property
     def position(self) -> Union[dict, None]:
