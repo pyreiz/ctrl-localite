@@ -158,7 +158,7 @@ class Coil:
             raise ValueError("Index must be higher than 0")
         msg = json.dumps({f"coil_{self._id}_target_index": index})
         self._push_loc(msg=msg)        
-        self.request("target_index")
+        return self.request("target_index")
 
     @property
     def position(self) -> Union[dict, None]:
