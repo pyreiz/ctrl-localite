@@ -1,7 +1,7 @@
 # from .mock_localite import Mock
-from pytest import fixture
+from pytest import fixture, raises
 from localite.flow.mock import Mock
-from localite.flow.loc import LOC, is_valid
+from localite.flow.loc import LOC, is_valid, LastMessage
 from localite.flow.payload import Queue, Payload, put_in_queue, get_from_queue
 import time
 import json
@@ -164,3 +164,27 @@ def test_valid():
     assert is_valid(pl('{"coil_0_target_index": -1}')) == False
     assert is_valid(pl('{"current_instrument": "POINTER"}'))
     assert is_valid(pl('{"garbage": "garbage"}')) == False
+
+
+def test_last_message_expects():
+    lm = LastMessage()
+    assert lm.expects(None) == 0
+    assert lm.expects(None) == 0
+
+
+def test_last_message_raises():
+    pl = Payload(fmt="mrk", msg='{"single_pulse":"COIL_0"}')
+    lm = LastMessage()
+    with raises(ValueError):
+        lm.update(pl)
+
+
+def test_last_message_works():
+    pl = Payload(fmt="loc", msg='{"single_pulse":"COIL_0"}')
+    lm = LastMessage()
+    lm.update(pl)
+    assert lm.expects(None) == 1
+    assert lm.expects(None) == 2
+    response = {lm.expect: 1}
+    assert lm.expects(response) == 0
+    assert lm.expect == None

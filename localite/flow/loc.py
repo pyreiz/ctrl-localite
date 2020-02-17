@@ -182,7 +182,7 @@ class LastMessage(Payload):
 
     def update(self, payload: Payload):
         "update the expectation"
-        if payload.fmt != "loc":  # pragma no cover
+        if payload.fmt != "loc":
             raise ValueError("Must be a valid loc-command")
         self.fmt = payload.fmt
         self.msg = payload.msg
@@ -264,11 +264,11 @@ class LOC(threading.Thread):
                         response = listen_and_queue(
                             client, ignore=self.ignore, queue=self.outbox
                         )
-                    # sometimes, the get: "target_index" is ignored. 
+                    # sometimes, the get: "target_index" is ignored.
                     # in these cases, resend
                     if "target_index" in lastmessage.msg:
-                        flevel = lastmessage.expects(response)                
-                        if flevel >= 2:                        
+                        flevel = lastmessage.expects(response)
+                        if flevel >= 2:
                             print("LOC:RESEND", lastmessage.msg)
                             client.send(lastmessage.msg)
                             lastmessage.counter = 0

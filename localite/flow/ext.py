@@ -54,7 +54,7 @@ class EXT(threading.Thread):
         self.is_running = threading.Event()
 
     def await_running(self):
-        while not self.is_running.is_set():
+        while not self.is_running.is_set(): # pragma no cover
             pass
 
     def run(self):
