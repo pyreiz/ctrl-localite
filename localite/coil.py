@@ -49,8 +49,10 @@ class Coil:
     
     """
 
-    _time_since_last_request: Dict[str, Any] = dict()
-    _request_cache: Dict[str, Any] = dict()
+    _time_since_last_request: Dict[str, Any]
+    _time_since_last_request = dict()
+    _request_cache: Dict[str, Any]
+    _request_cache = dict()
 
     def __init__(self, coil: int = 0, address: Tuple[str, int] = ("127.0.0.1", 6667)):
         host, port = address
