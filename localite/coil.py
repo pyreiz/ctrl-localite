@@ -8,6 +8,7 @@ from typing import Tuple, Dict, Any, Union
 import json
 from time import sleep, time
 
+
 def pythonize_values(v: str) -> Union[bool, None, str]:
     "pythonize a dictionaries values"
     if type(v) is not str:
@@ -47,8 +48,9 @@ class Coil:
         the host, port of the EXT server of the localite-flow
     
     """
-    _time_since_last_request = dict()
-    _request_cache = dict()
+
+    _time_since_last_request: Dict[str, Any] = dict()
+    _request_cache: Dict[str, Any] = dict()
 
     def __init__(self, coil: int = 0, address: Tuple[str, int] = ("127.0.0.1", 6667)):
         host, port = address
@@ -95,12 +97,11 @@ class Coil:
            answer to the request will be returned. This was necessary to prevent
            clogging and missed values from repeated requests.
         """
-        if time() - self._time_since_last_request.get(msg, 0) > 1.5:            
+        if time() - self._time_since_last_request.get(msg, 0) > 1.5:
             msg = json.dumps({"get": f"coil_{self.id}_{msg}"})
             self._time_since_last_request[msg] = time()
             self._request_cache[msg] = self._request(msg)
-        return self._request_cache[msg] 
-            
+        return self._request_cache[msg]
 
     def _request(self, msg: str) -> Any:
         "request a ready made property from localite"
@@ -171,7 +172,7 @@ class Coil:
         if index < 0:
             raise ValueError("Index must be higher than 0")
         msg = json.dumps({f"coil_{self._id}_target_index": index})
-        self._push_loc(msg=msg)        
+        self._push_loc(msg=msg)
         return self.request("target_index")
 
     @property
