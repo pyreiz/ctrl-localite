@@ -72,6 +72,7 @@ class Coil:
         self.amplitude
 
     def push(self, msg: str):
+        sleep(1)
         self._push_loc(msg=msg)
 
     def push_marker(self, marker: str):
