@@ -45,7 +45,7 @@ class Coil:
         the coil to control, either 0 or 1
     address: Tuple[str, int] = ("127.0.0.1", 6667)
         the host, port of the EXT server of the localite-flow
-    
+
     """
 
     def __init__(self, coil: int = 0, address: Tuple[str, int] = ("127.0.0.1", 6667)):
@@ -90,7 +90,7 @@ class Coil:
 
     def _request(self, msg: str) -> Any:
         "request a ready made property from localite"
-        self._push_loc(msg=msg)
+        self.push(msg=msg)
         response, ts = self.receiver.await_response(msg)
         return pythonize_response(response)
 
@@ -143,7 +143,7 @@ class Coil:
     def amplitude(self, amplitude: int) -> int:
         "get the current amplitude in MSO%"
         msg = f'{{"coil_{self._id}_amplitude": {amplitude}}}'
-        self._push_loc(msg=msg)
+        self.push(msg=msg)
         return self.request("amplitude")
 
     @property
@@ -157,14 +157,14 @@ class Coil:
         if index < 0:
             raise ValueError("Index must be higher than 0")
         msg = json.dumps({f"coil_{self._id}_target_index": index})
-        self._push_loc(msg=msg)        
+        self.push(msg=msg)
         return self.request("target_index")
 
     @property
     def position(self) -> Union[dict, None]:
         """the current position of the coil
-        
-        e.g. {"q0": 17.0,"qx": 17.0, "qy": 17.0, "qz": 17.0, 
+
+        e.g. {"q0": 17.0,"qx": 17.0, "qy": 17.0, "qz": 17.0,
               "x": 37, "y": 77, "z": 53}
         """
         return self.request("position")
@@ -182,7 +182,7 @@ class Coil:
     @property
     def waveform(self) -> str:
         """the waveform currently set in the stimulator
-        
+
         can be e.g. 'Monophasic', 'Biphasic', 'Halfsine', 'Biphasic Burst'
         """
         return self.request("waveform")["name"]
@@ -190,7 +190,7 @@ class Coil:
     @property
     def model(self) -> str:
         """the name of the stimulator model
-        
+
         e.g. 'MagVenture 65 X100 + Option'
         """
         typ = self.request("type")
@@ -200,9 +200,9 @@ class Coil:
     @property
     def mode(self) -> str:
         """the mode of the stimulator
-        
+
         can be e.g. 'Power', 'Twin', 'Dual', 'Standard'
-            
+
         """
         return self.request("stimulator_mode")["name"]
 
@@ -218,5 +218,5 @@ class Coil:
                 "mepmax": mepmax,
             }
         }
-        self._push_loc(msg=json.dumps(msg))
+        self.push(msg=json.dumps(msg))
 
