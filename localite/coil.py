@@ -48,7 +48,7 @@ class Coil:
     
     """
 
-    def __init__(self, coil: int = 0, address: Tuple[str, int] = ("127.0.0.1", 6667)):
+    def __init__(self, coil: int = 0, address: Tuple[str, int] = ("127.0.0.1", 6667), timeout=10):
         host, port = address
         self._push_mrk = partial(push, fmt="mrk", host=host, port=port)
         self._push_loc = partial(push, fmt="loc", host=host, port=port)
