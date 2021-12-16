@@ -6,7 +6,7 @@ from functools import partial
 from localite.flow.mrk import Receiver
 from typing import Tuple, Dict, Any, Union
 import json
-from time import sleep
+import time
 
 def pythonize_values(v: str) -> Union[bool, None, str]:
     "pythonize a dictionaries values"
@@ -54,7 +54,10 @@ class Coil:
         self._push_loc = partial(push, fmt="loc", host=host, port=port)
         self.receiver = Receiver(name="localite_marker")
         self.receiver.start()
+        start_receiver_time = time.time()
         while not self.receiver.is_running.is_set():
+            if time.time() > start_receiver_time + timeout:
+                raise ConnectionError("Could not connect to localite flow")
             pass
         self.id = coil
 
